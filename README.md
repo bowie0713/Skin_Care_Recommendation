@@ -1,4 +1,4 @@
-# Skin_Care_Recommendation Data Demo
+# Skin_Care_Recommendation Data Demo - Group 2 (Bowie Chuang, Sofia Ward, Carter Kulm, Christina Pham)
 
 ReadMe file for skin care recommendation project
 
