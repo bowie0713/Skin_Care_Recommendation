@@ -1,0 +1,25 @@
+---
+title: "skincare"
+author: "Christina Pham"
+date: "2025-01-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(httr)
+
+url <- "https://sephora14.p.rapidapi.com/searchByBrand"
+
+queryString <- list(
+	page = "1",
+	sortBy = "NEW"
+)
+
+response <- VERB("GET", url, query = queryString, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+
+response
+```
