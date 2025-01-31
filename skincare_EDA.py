@@ -4,5 +4,12 @@ import os
 import random
 import requests
 import json
+from bs4 import BeautifulSoup
 
-res = requests.get()
+proxy = {
+    "http": "cf7mRqAPzKpAWSyl://cf7m:wifi;;;;@rotating.proxyempire.io-9000", 
+    "https": "cf7mRqAPzKpAWSyl://cf7m:wifi;;;;@rotating.proxyempire.io-9000"
+}
+
+
+
