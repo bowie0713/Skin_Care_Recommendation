@@ -11,15 +11,34 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(httr)
+library(jsonlite)
+library(tidyverse)
+```
 
-url <- "https://sephora14.p.rapidapi.com/searchByBrand"
+```{r}
 
-queryString <- list(
-	page = "1",
-	sortBy = "NEW"
-)
+url <- "https://sephora14.p.rapidapi.com/categories"
 
-response <- VERB("GET", url, query = queryString, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+response <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
-response
+response <- fromJSON(rawToChar(res$content))
+ 
+skincare_df <-  as.data.frame(response)
+skincare_df
+
+skincare_labels <- c("Skincare", "Moisturizers", "Night Creams", "Cleansers", "Face Cleansers", 
+                     "Face Wash & Cleansers", "Exfoliators", "Toners", "Face Serums", 
+                     "Treatments", "Blemish & Acne Treatments", "Masks", "Face Masks", 
+                     "Facial Peel", "Sheet Masks", "Eye Masks", "Eye Care", "Eye Creams & Treatments", 
+                     "Sunscreen", "Face Sunscreen", "Body Sunscreen", "Acne & Blemishes", 
+                     "Anti-Aging", "Dark Spots", "Pores", "Dryness", "Fine Lines & Wrinkles", 
+                     "Dullness", "Clean Skincare", "Vegan Skincare", "Skincare Value & Gift Sets")
+#not sure if should include mini sizes
+
+  
+skincare_df %>% 
+  filter(categoryLabel %in% skincare_labels)
+
+#now have to do GET requests for each categoryID...
+
 ```
