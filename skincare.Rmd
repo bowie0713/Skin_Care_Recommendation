@@ -19,7 +19,7 @@ library(tidyverse)
 
 url <- "https://sephora14.p.rapidapi.com/categories"
 
-response <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+res <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
 response <- fromJSON(rawToChar(res$content))
  
@@ -42,3 +42,21 @@ skincare_df %>%
 #now have to do GET requests for each categoryID...
 
 ```
+
+```{r}
+
+# url2 <- "https://sephora14.p.rapidapi.com/brands"
+url3 <- "https://sephora14.p.rapidapi.com/product"
+
+# res2 <- VERB("GET", url2, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+
+res3 <- VERB("GET", url3, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+
+
+response2 <- fromJSON(rawToChar(res2$content))
+respobnse3 <- fromJSON(rawToChar(res3$content))
+
+
+
+```
+
