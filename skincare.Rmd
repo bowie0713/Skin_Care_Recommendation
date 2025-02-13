@@ -45,10 +45,10 @@ skincare_df %>%
 
 ```{r}
 
-# url2 <- "https://sephora14.p.rapidapi.com/brands"
+url2 <- "https://sephora14.p.rapidapi.com/brands"
 url3 <- "https://sephora14.p.rapidapi.com/product"
 
-# res2 <- VERB("GET", url2, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+res2 <- VERB("GET", url2, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
 res3 <- VERB("GET", url3, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
