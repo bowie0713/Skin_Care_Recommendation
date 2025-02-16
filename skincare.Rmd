@@ -11,31 +11,116 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(httr)
+library(rvest)
 library(jsonlite)
 library(tidyverse)
 ```
 
-```{r}
+```{python}
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
 
+# Step 1: Extract all product URLs from the sitemap
+sitemap_url = "https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml"
+sitemap_response = requests.get(sitemap_url)
+sitemap_soup = BeautifulSoup(sitemap_response.content, 'xml')
+
+# # Get all product URLs
+# product_urls = [loc.text for loc in sitemap_soup.find_all('loc')]
+# 
+# # Step 2: Define a function to scrape product details
+# def scrape_product(url):
+#     response = requests.get(url)
+#     soup = BeautifulSoup(response.content, 'html.parser')
+# 
+#     # Extract product name, brand, and price
+#     try:
+#         product_name = soup.select_one('span[data-at="product_name"]').get_text(strip=True)
+#         brand_name = soup.select_one('span[data-at="brand_name"]').get_text(strip=True)
+#         price = soup.select_one('span[data-at="price"]').get_text(strip=True)
+#     except AttributeError:
+#         # Handle cases where data is missing
+#         product_name = brand_name = price = None
+# 
+#     return {'Product': product_name, 'Brand': brand_name, 'Price': price, 'URL': url}
+# 
+# # Step 3: Scrape details for each product (limiting to a few for demo purposes)
+# products_data = []
+# for url in product_urls[:10]:  # Limit to 10 for demonstration; remove the limit as needed
+#     product_details = scrape_product(url)
+#     products_data.append(product_details)
+# 
+# # Step 4: Save to CSV
+# df = pd.DataFrame(products_data)
+# df.to_csv("sephora_products.csv", index=False)
+# 
+# print("Scraping completed. Data saved to sephora_products.csv")
+```
+
+```{python}
+from selenium import webdriver
+import time
+
+# Initialize Selenium WebDriver
+options = webdriver.ChromeOptions()
+options.add_argument("--disable-gpu")
+driver = webdriver.Chrome(options = options)  # Ensure you have ChromeDriver installed
+driver.get(sitemap_url)
+
+time.sleep(5)
+
+# Get the page source after fully loading
+sitemap_html = driver.page_source
+
+driver.quit()
+```
+
+```{python}
+sitemap_html
+```
+
+
+```{r}
+library(rvest)
+
+url <- "https://www.sephora.com/shop/facial-treatments"
+
+# Read the HTML content from the URL
+webpage <- read_html(url)
+#Crawl-delay: 5
+#User-agent: * SLAYYYYYY
+
+
+
+# Extract product names and brand names
+# Replace '.css-2uq0c7' and '.css-1k1z2gz' with the correct CSS selectors based on the website's HTML
+product_names <- webpage %>% html_nodes(".css-2uq0c7") %>% html_text(trim = TRUE)
+brand_names <- webpage %>% html_nodes(".css-1k1z2gz") %>% html_text(trim = TRUE)
+
+# Combine the product names and brand names into a data frame
+products <- data.frame(Brand = brand_names, Product = product_names)
+
+# Print the result
+print(products)
+
+```
+
+
+```{r}
 url <- "https://sephora14.p.rapidapi.com/categories"
 
-res <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+#res <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
 response <- fromJSON(rawToChar(res$content))
  
 skincare_df <-  as.data.frame(response)
 skincare_df
 
-skincare_labels <- c("Skincare", "Moisturizers", "Night Creams", "Cleansers", "Face Cleansers", 
-                     "Face Wash & Cleansers", "Exfoliators", "Toners", "Face Serums", 
-                     "Treatments", "Blemish & Acne Treatments", "Masks", "Face Masks", 
-                     "Facial Peel", "Sheet Masks", "Eye Masks", "Eye Care", "Eye Creams & Treatments", 
-                     "Sunscreen", "Face Sunscreen", "Body Sunscreen", "Acne & Blemishes", 
-                     "Anti-Aging", "Dark Spots", "Pores", "Dryness", "Fine Lines & Wrinkles", 
-                     "Dullness", "Clean Skincare", "Vegan Skincare", "Skincare Value & Gift Sets")
-#not sure if should include mini sizes
+skincare_labels <- c("Sunscreen", "Masks", "Moisturizers", "Cleansers", "Eye Care", "Lip Balms & Treatments", "Treatments")
+```
 
-  
+```{r}
 skincare_df %>% 
   filter(categoryLabel %in% skincare_labels)
 
@@ -45,18 +130,15 @@ skincare_df %>%
 
 ```{r}
 
-url2 <- "https://sephora14.p.rapidapi.com/brands"
+# url2 <- "https://sephora14.p.rapidapi.com/brands"
 url3 <- "https://sephora14.p.rapidapi.com/product"
 
-res2 <- VERB("GET", url2, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
+# res2 <- VERB("GET", url2, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
 res3 <- VERB("GET", url3, add_headers('x-rapidapi-key' = '3b7be3beebmsh28e1ed34b1050dbp1b865bjsn0d534c08ab6e', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
 
 
 response2 <- fromJSON(rawToChar(res2$content))
 respobnse3 <- fromJSON(rawToChar(res3$content))
-
-
-
 ```
 
