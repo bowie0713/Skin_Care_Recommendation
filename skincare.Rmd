@@ -14,6 +14,7 @@ library(httr)
 library(rvest)
 library(jsonlite)
 library(tidyverse)
+library(reticulate)
 ```
 
 ```{python}
@@ -74,10 +75,24 @@ time.sleep(5)
 sitemap_html = driver.page_source
 
 driver.quit()
+
+sitemap_html
 ```
 
 ```{python}
-sitemap_html
+soup = BeautifulSoup(sitemap_html, 'html.parser')
+soup
+rows = soup.select('loc')
+rows
+rows = pd.DataFrame(rows)
+```
+
+```{r}
+rows_html <- py$rows
+rows_html %>% 
+  filter(
+    str_detect(X0, "shampoo") | str_detect(X0, "conditioner") | str_detect(X0, "cleanser") | str_detect(X0, "cleanse") | str_detect(X0, "cleansing") | str_detect(X0, "cream") | str_detect(X0, "creme") | str_detect(X0, "moisturizer") | str_detect(X0, "toner") | str_detect(X0, "serum") | str_detect(X0, "mask")
+  )
 ```
 
 
