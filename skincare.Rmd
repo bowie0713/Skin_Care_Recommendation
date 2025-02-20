@@ -14,8 +14,8 @@ library(httr)
 library(rvest)
 library(jsonlite)
 library(tidyverse)
-library(reticulate)
 ```
+https://www.sephora.com/shop/facial-toner-skin-toner/?pageSize=300&currentPage=1
 
 ```{python}
 import requests
@@ -75,24 +75,14 @@ time.sleep(5)
 sitemap_html = driver.page_source
 
 driver.quit()
-
-sitemap_html
 ```
 
 ```{python}
-soup = BeautifulSoup(sitemap_html, 'html.parser')
-soup
-rows = soup.select('loc')
-rows
-rows = pd.DataFrame(rows)
-```
+sitemap_html
+# TO DO: 
+#Check for unavailable prods 
+# <h1 class="css-tz2kl4 e15t7owz0" data-comp="BaseComponent ">Sorry, this product is not available.</h1>
 
-```{r}
-rows_html <- py$rows
-rows_html %>% 
-  filter(
-    str_detect(X0, "shampoo") | str_detect(X0, "conditioner") | str_detect(X0, "cleanser") | str_detect(X0, "cleanse") | str_detect(X0, "cleansing") | str_detect(X0, "cream") | str_detect(X0, "creme") | str_detect(X0, "moisturizer") | str_detect(X0, "toner") | str_detect(X0, "serum") | str_detect(X0, "mask")
-  )
 ```
 
 
@@ -104,9 +94,6 @@ url <- "https://www.sephora.com/shop/facial-treatments"
 # Read the HTML content from the URL
 webpage <- read_html(url)
 #Crawl-delay: 5
-#User-agent: * SLAYYYYYY
-
-
 
 # Extract product names and brand names
 # Replace '.css-2uq0c7' and '.css-1k1z2gz' with the correct CSS selectors based on the website's HTML
@@ -123,6 +110,7 @@ print(products)
 
 
 ```{r}
+#categories: shampoo, conditioner, cleanse/cleanser/cleansing, cream/creme/moisturizer, toner, essence/serum (combined hair and facial serums), mask (combined hair and facial masks) 
 url <- "https://sephora14.p.rapidapi.com/categories"
 
 #res <- VERB("GET", url, add_headers('x-rapidapi-key' = '526c5e0dc6msh087f830c8e919e9p1e88d8jsnaf27c82584b0', 'x-rapidapi-host' = 'sephora14.p.rapidapi.com'), content_type("application/octet-stream"))
