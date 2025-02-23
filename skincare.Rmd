@@ -51,31 +51,17 @@ with open("sitemap.html", "r", encoding="utf-8") as file:
 
 ```{r}
 #save sitemap
-#sitemap_html <- py$sitemap_html
-#writeLines(sitemap_html, "sitemap.html")
-
-# TO DO: 
-#Check for unavailable prods 
-# <h1 class="css-tz2kl4 e15t7owz0" data-comp="BaseComponent ">Sorry, this product is not available.</h1>
-
+sitemap_html <- py$sitemap_html
+writeLines(sitemap_html, "sitemap.html")
 ```
 
 ```{python}
 soup = BeautifulSoup(sitemap_html, 'html.parser')
-#soup
 rows = soup.select('loc')
-#rows
 rows = pd.DataFrame(rows)
 
+rows
 ```
-
-```{r}
-# rows_html %>% 
-#   filter(
-#     str_detect(link, "shampoo") | str_detect(link, "conditioner") | str_detect(link, "cleanser") | str_detect(link, "cleanse") | str_detect(0, "cleansing") | str_detect(link, "cream") | str_detect(link, "creme") | str_detect(link, "moisturizer") | str_detect(0, "toner") | str_detect(link, "serum") | str_detect(link, "mask") | str_detect(link, "essence")
-#   )
-```
-
 
 ```{r}
 rows_html <- py$rows
@@ -118,77 +104,6 @@ import pandas as pd
 print(categorized_df)
 ```
 
-
-```{python}
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-
-import time
-product = pd.DataFrame()
-product = pd.DataFrame(columns=['brandname', 'price'])
-
-# Initialize Selenium WebDriver options
-options = Options()
-options.add_argument("--disable-gpu")
-
-
-# Initialize the WebDriver
-driver = webdriver.Chrome(options=options)  # Ensure ChromeDriver is installed and in PATH
-# Loop through each link in categorized_df['link']
-for link in categorized_df['link']:
-  try:
-    product = {}
-    driver.get(link)
-    time.sleep(10)
-    try:
-      #exit the pop up window
-      xpath = '//*[@id="modalDialog"]/button'
-      btn = driver.find_element_by_xpath(xpath)
-      btn.click()
-      time.sleep(10)
-    except:
-          pass
-    content = driver.page_source       
-    soup = BeautifulSoup(content, 'html.parser')
-    product['brandname'] = soup.find_all('div', class_='css-1kj9pbo e15t7owz0').text()
-    
-      #product['productname'] = soup.find_all('span', class_='css-wkag1e e15t7owz0').text()
-      #product['description'] = soup.find_all('div', class_='css-1kj9pbo e15t7owz0').text().strip()
-    
-    #products.append(product)
-      # Do something with sitemap_html (e.g., save to a file or process it)
-      
-    # try: #check to see if the page is empty   
-    #   if driver.find_element_by_class_name('css-3a7b4s').is_displayed():
-    #     break
-    #         
-    #   except:
-    
-            #check to see if there is a pop up windew
-            #as scrolling check if there is any more room to scroll
-          # old_len = 0
-          #   while True:
-          #     browser = scrollDown(driver, 20) #scroll down the page
-          #     time.sleep(10) #give it time to load
-          #     slug = driver.find_elements_by_class_name('css-ix8km1') #look for the urls of products
-          #     new_len = len(slug)
-          #       if old_len == new_len: #if the old length and new length are equal, the bottom of page was reached
-          #         break
-          #       else:
-          #         old_len = new_len
-
-  except Exception as e:
-    # Print any errors encountered
-    print(f"Error processing {link}: {e}")
-        
-
-# Close the browser after the loop
-driver.quit()
-
-```
-
-
 ```{python}
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -202,6 +117,9 @@ print(categorized_df)
 # Setup Chrome options
 options = Options()
 options.add_argument("--disable-gpu")
+
+# MACS USE THIS: options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
+
 options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
 options.add_argument("--disable-blink-features=AutomationControlled")
 
