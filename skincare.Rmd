@@ -118,97 +118,12 @@ import pandas as pd
 print(categorized_df)
 ```
 
-```{python}
-import time
-import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-# Load a subset of categorized_df for testing
-test_links = categorized_df['link'][1]  # Use full dataset later
-
-# Set up Selenium WebDriver with additional fixes
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Run in headless mode to avoid pop-ups
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--incognito")  # Forces a fresh session to prevent cache
-chrome_options.add_argument("--disable-cache")  # Disable caching
-chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # Use realistic User-Agent
-
-service = Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=chrome_options)
-driver.set_page_load_timeout(30)  # Allow up to 30 seconds for pages to load
-
-
-driver = webdriver.Chrome(options=options)
-
-def check_url_selenium(url, delay=10):
-    """Check if a URL loads successfully using Selenium with a delay."""
-    try:
-        driver.delete_all_cookies()  # Clear cookies before each request
-        driver.get(url)
-        driver.refresh()  # Force a reload to prevent cache issues
-
-        time.sleep(delay)  # Add a 10-second delay before checking validity
-
-         # Wait for page load to complete before checking the URL
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located(("tag name", "body")))
-
-        time.sleep(delay)  # Add a 10-second delay to allow JS to fully load
-        driver.refresh()  # Force a reload to prevent cache issues
-
-        # Get the final URL after possible redirections
-        final_url = driver.current_url
-        print(f"DEBUG: Final URL after first check - {final_url}")  # Debugging line
-        
-        # Wait another 10 seconds and check again in case of delayed redirects
-        time.sleep(10)
-        final_url = driver.current_url
-        print(f"DEBUG: Final URL after waiting 2nd time - {final_url}")  # Debugging line
-        
-      
-        # Check if the link was redirected to the 'product not carried' page
-        if "productnotcarried" in final_url:
-            return False  # If redirected to 'product not carried', mark as invalid
-          
-        return True  # If the page loads successfully and isn't redirected, mark as valid
-      
-    except WebDriverException:
-        return False  # If it fails, mark as invalid
-
-# List to store results
-validity_results_selenium = []
-
-# Iterate through all cleanser product URLs in the dataframe
-for url in test_links:
-    is_valid = check_url_selenium(url, delay = 10)
-    validity_results_selenium.append((url, is_valid))
-
-# Convert results into a pandas DataFrame
-valid_cleanser_links_selenium = pd.DataFrame(validity_results_selenium, columns=["link", "valid"])
-
-# Close Selenium WebDriver
-driver.quit()
-
-# Save the results to a CSV file
-valid_cleanser_links_selenium.to_csv("valid_cleanser_links.csv", index=False)
-
-# Display the final dataframe
-print(valid_cleanser_links_selenium)
-
-```
 
 ```{python}
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+
 import time
 product = pd.DataFrame()
 product = pd.DataFrame(columns=['brandname', 'price'])
@@ -216,6 +131,7 @@ product = pd.DataFrame(columns=['brandname', 'price'])
 # Initialize Selenium WebDriver options
 options = Options()
 options.add_argument("--disable-gpu")
+
 
 # Initialize the WebDriver
 driver = webdriver.Chrome(options=options)  # Ensure ChromeDriver is installed and in PATH
@@ -280,13 +196,14 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 #Testing
-test_links = categorized_df['link'][:4]
+test_links = categorized_df['link'][:20]
+print(categorized_df)
 
-# Initialize Selenium WebDriver options
 # Setup Chrome options
 options = Options()
 options.add_argument("--disable-gpu")
-
+options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
+options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Initialize the WebDriver
 driver = webdriver.Chrome(options=options)  # Ensure ChromeDriver is installed and in PATH
@@ -296,7 +213,7 @@ products_list = []
 for link in test_links:
     try:
         driver.get(link)
-        time.sleep(15)  # Give page time to load
+        time.sleep(8)  # Give page time to load
         
         #Check link if the page redirects to "productnotcarried"
         if "/search?" in driver.current_url:
@@ -307,7 +224,7 @@ for link in test_links:
         soup = BeautifulSoup(driver.page_source, 'html.parser')
 
         # Extract brand name
-        brand_element = soup.find_all('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
+        brand_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
         brand_name = brand_element.text.strip() if brand_element else "N/A"
 
         # Append data
