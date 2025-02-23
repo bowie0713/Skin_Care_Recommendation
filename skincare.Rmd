@@ -226,9 +226,16 @@ for link in test_links:
         # Extract brand name
         brand_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
         brand_name = brand_element.text.strip() if brand_element else "N/A"
+        
+      
+        #Extract brand price
+        brand_element3 = soup.find('b', class_ = 'css-0')
+        brand_price = brand_element3.text.strip() if brand_price else "N/A"
 
         # Append data
-        products_list.append({"brandname": brand_name, "link": link})
+        products_list.append({"brandname": brand_name, 
+                              "brandprice": brand_price,
+                              "link": link})
         #check if it processes link 
         print(f" processed: {link}")
 
