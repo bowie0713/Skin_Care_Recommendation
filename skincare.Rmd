@@ -32,23 +32,27 @@ from selenium import webdriver
 import time
 
 # Initialize Selenium WebDriver
-options = webdriver.ChromeOptions()
-options.add_argument("--disable-gpu")
-driver = webdriver.Chrome(options = options)  # Ensure you have ChromeDriver installed
-driver.get(sitemap_url)
+#options = webdriver.ChromeOptions()
+#options.add_argument("--disable-gpu")
+#driver = webdriver.Chrome(options = options)  # Ensure you have ChromeDriver installed
+#driver.get(sitemap_url)
 
-time.sleep(5)
+#time.sleep(5)
 
 # Get the page source after fully loading
-sitemap_html = driver.page_source
+#sitemap_html = driver.page_source
 
-driver.quit()
+#driver.quit()
+
+#Load html file
+with open("sitemap.html", "r", encoding="utf-8") as file:
+    sitemap_html = file.read()
 ```
 
 ```{r}
 #save sitemap
-sitemap_html <- py$sitemap_html
-writeLines(sitemap_html, "sitemap.html")
+#sitemap_html <- py$sitemap_html
+#writeLines(sitemap_html, "sitemap.html")
 
 # TO DO: 
 #Check for unavailable prods 
@@ -62,6 +66,7 @@ soup = BeautifulSoup(sitemap_html, 'html.parser')
 rows = soup.select('loc')
 #rows
 rows = pd.DataFrame(rows)
+
 ```
 
 ```{r}
@@ -71,15 +76,10 @@ rows = pd.DataFrame(rows)
 #   )
 ```
 
-rows_html %>% 
-  filter(
-    str_detect(link, "shampoo") | str_detect(link, "conditioner") | str_detect(link, "cleanser") | str_detect(link, "cleanse") | str_detect(0, "cleansing") | str_detect(link, "cream") | str_detect(link, "creme") | str_detect(link, "moisturizer") | str_detect(0, "toner") | str_detect(link, "serum") | str_detect(link, "mask") | str_detect(link, "essence")
-  )
 
 ```{r}
 rows_html <- py$rows
-
-colnames(rows_html) <- "link"
+colnames(rows_html) <- c("link")
 
 categories <- list(
   shampoo = c('shampoo'), 
@@ -110,6 +110,7 @@ combined_df <- do.call(rbind, lapply(names(categorized_links), function(category
 
 # Pass the combined DataFrame to Python
 py$categorized_df <- combined_df
+
 ```
 
 ```{python}
@@ -118,11 +119,98 @@ print(categorized_df)
 ```
 
 ```{python}
+import time
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+# Load a subset of categorized_df for testing
+test_links = categorized_df['link'][1]  # Use full dataset later
+
+# Set up Selenium WebDriver with additional fixes
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Run in headless mode to avoid pop-ups
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--incognito")  # Forces a fresh session to prevent cache
+chrome_options.add_argument("--disable-cache")  # Disable caching
+chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # Use realistic User-Agent
+
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=chrome_options)
+driver.set_page_load_timeout(30)  # Allow up to 30 seconds for pages to load
+
+
+driver = webdriver.Chrome(options=options)
+
+def check_url_selenium(url, delay=10):
+    """Check if a URL loads successfully using Selenium with a delay."""
+    try:
+        driver.delete_all_cookies()  # Clear cookies before each request
+        driver.get(url)
+        driver.refresh()  # Force a reload to prevent cache issues
+
+        time.sleep(delay)  # Add a 10-second delay before checking validity
+
+         # Wait for page load to complete before checking the URL
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located(("tag name", "body")))
+
+        time.sleep(delay)  # Add a 10-second delay to allow JS to fully load
+        driver.refresh()  # Force a reload to prevent cache issues
+
+        # Get the final URL after possible redirections
+        final_url = driver.current_url
+        print(f"DEBUG: Final URL after first check - {final_url}")  # Debugging line
+        
+        # Wait another 10 seconds and check again in case of delayed redirects
+        time.sleep(10)
+        final_url = driver.current_url
+        print(f"DEBUG: Final URL after waiting 2nd time - {final_url}")  # Debugging line
+        
+      
+        # Check if the link was redirected to the 'product not carried' page
+        if "productnotcarried" in final_url:
+            return False  # If redirected to 'product not carried', mark as invalid
+          
+        return True  # If the page loads successfully and isn't redirected, mark as valid
+      
+    except WebDriverException:
+        return False  # If it fails, mark as invalid
+
+# List to store results
+validity_results_selenium = []
+
+# Iterate through all cleanser product URLs in the dataframe
+for url in test_links:
+    is_valid = check_url_selenium(url, delay = 10)
+    validity_results_selenium.append((url, is_valid))
+
+# Convert results into a pandas DataFrame
+valid_cleanser_links_selenium = pd.DataFrame(validity_results_selenium, columns=["link", "valid"])
+
+# Close Selenium WebDriver
+driver.quit()
+
+# Save the results to a CSV file
+valid_cleanser_links_selenium.to_csv("valid_cleanser_links.csv", index=False)
+
+# Display the final dataframe
+print(valid_cleanser_links_selenium)
+
+```
+
+```{python}
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
-product = pd.Dataframe()
+product = pd.DataFrame()
 product = pd.DataFrame(columns=['brandname', 'price'])
 
 # Initialize Selenium WebDriver options
@@ -146,7 +234,7 @@ for link in categorized_df['link']:
     except:
           pass
     content = driver.page_source       
-    soup = BeautifulSoup(content, 'htlml.parser')
+    soup = BeautifulSoup(content, 'html.parser')
     product['brandname'] = soup.find_all('div', class_='css-1kj9pbo e15t7owz0').text()
     
       #product['productname'] = soup.find_all('span', class_='css-wkag1e e15t7owz0').text()
@@ -182,5 +270,60 @@ for link in categorized_df['link']:
 # Close the browser after the loop
 driver.quit()
 
+```
+
+
+```{python}
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+
+#Testing
+test_links = categorized_df['link'][:4]
+
+# Initialize Selenium WebDriver options
+# Setup Chrome options
+options = Options()
+options.add_argument("--disable-gpu")
+
+
+# Initialize the WebDriver
+driver = webdriver.Chrome(options=options)  # Ensure ChromeDriver is installed and in PATH
+
+# Loop through each link in categorized_df['link']
+products_list = []
+for link in test_links:
+    try:
+        driver.get(link)
+        time.sleep(15)  # Give page time to load
+        
+        #Check link if the page redirects to "productnotcarried"
+        if "/search?" in driver.current_url:
+          print(f" Skipping unavailable product: {link}")
+          continue
+        
+        #Parse Page Source
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+        # Extract brand name
+        brand_element = soup.find_all('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
+        brand_name = brand_element.text.strip() if brand_element else "N/A"
+
+        # Append data
+        products_list.append({"brandname": brand_name, "link": link})
+        #check if it processes link 
+        print(f" processed: {link}")
+
+    except Exception as e:
+        print(f" Error processing {link}: {e}")
+
+# Close WebDriver *after* processing all links
+driver.quit()
+
+# Convert list to DataFrame
+product_df = pd.DataFrame(products_list)
+print(product_df)
+View(product_df)
 ```
 
