@@ -104,10 +104,7 @@ import pandas as pd
 print(categorized_df)
 ```
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 ```{python}
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -115,20 +112,23 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 #Testing
-test_links = categorized_df['link'][:3]
-print(categorized_df)
+test_links = categorized_df['URL'][:3]
+# print(categorized_df)
+
+def scrollDown(driver, n_scroll):
+    elem = driver.find_element(By.TAG_NAME, "html")
+    while n_scroll >= 0:
+        elem.send_keys(Keys.PAGE_DOWN)
+        n_scroll -= 1
+    return driver
 
 # Setup Chrome options
 options = Options()
 options.add_argument("--disable-gpu")
-<<<<<<< Updated upstream
 
-# MACS USE THIS: options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
+options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
 
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
-=======
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36") #Christina's agent 
->>>>>>> Stashed changes
+
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Initialize the WebDriver
@@ -146,6 +146,11 @@ for link in test_links:
           print(f" Skipping unavailable product: {link}")
           continue
         
+        while True:
+            browser = scrollDown(driver, 20) #scroll down the page
+            time.sleep(8) #give it time to load
+            break
+        
         #Parse Page Source
         soup = BeautifulSoup(driver.page_source, 'html.parser')
 
@@ -153,29 +158,35 @@ for link in test_links:
         brand_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
         brand_name = brand_element.text.strip() if brand_element else "N/A"
         
-        #Extract brand price
-        brand_element3 = soup.find('b', class_='css-0')
-        brand_price = brand_element3.text.strip() if brand_element3 else "N/A"
+      # TO DO: Take off size: 
+        #Extract brand size
+        size = soup.find('span', class_ = 'css-15ro776')
+        product_size = size.text.strip() if size else "N/A"
         
-        #Extract brand rating
-        brand_elements = soup.find_all('span', class_='css-egw4ri e15t7owz0')
+        #Extract product price
+        brand_element3 = soup.find('b', class_='css-0')
+        prod_price = brand_element3.text.strip() if brand_element3 else "N/A"
+        
+        #Extract product rating class="css-egw4ri e15t7owz0"
+        brand_elements = soup.find_all('span', class_= 'css-egw4ri e15t7owz0')
 
         # Ensure there's at least one match before accessing index 0
         if brand_elements:
-          brand_rating = brand_elements[0].text.strip()  # Get first match
+          prod_rating = brand_elements[0].text.strip()  # Get first match
         else:
-          brand_rating = "N/A"  # Default value if no match found
-        print(f"Brand Rating: {brand_rating}")
+          prod_rating = "N/A"  # Default value if no match found
+        print(f"Product Rating: {prod_rating}")
         
         # #Extract brand reviews
         # brand_element5 = soup.find('span', class_ = 'css-1dae9ku e15t7owz0')
-        # brand_reviews = brand_element5.text.strip() if brand_element5 else "N/A"
+        # prod_reviews = brand_element5.text.strip() if brand_element5 else "N/A"
         
         # Append data
         products_list.append({"Brand Name": brand_name, 
-                              "Brand Price": brand_price,
-                              "Brand Rating": brand_rating,
-                          #    "Brand Reviews": brand_reviews,
+                              "Product Price": prod_price,
+                              "Product Rating": prod_rating,
+                              "Product Size": product_size,
+                          #    "Product Reviews": prod_reviews,
                               "link": link})
         #check if it processes link 
         print(f" processed: {link}")
@@ -192,3 +203,6 @@ print(product_df)
 View(product_df)
 ```
 
+## Test
+```{python}
+```
