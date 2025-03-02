@@ -68,11 +68,12 @@ rows_html <- py$rows
 colnames(rows_html) <- c("link")
 
 categories <- list(
-  cleanser = c('cleanser', 'cleanse', 'cleansing'),
-  cream = c('cream','creme','moisturizer'),
-  toner = c('toner'),
-  serum = c('serum', 'essence'),
-  mask = c('mask')
+  Cleanser = c('cleanser', 'cleanse', 'cleansing'),
+  Cream = c('cream','creme','moisturizer'),
+  Toner = c('toner'),
+  Serum = c('serum', 'essence'),
+  Exfoliator = c('exfoliant', 'exfoliate', 'exfoliators'),
+  Mask = c('mask')
 )
 categorized_links <- list()
 
@@ -88,17 +89,23 @@ for (category in names(categories)) {
 
 combined_df <- do.call(rbind, lapply(names(categorized_links), function(category) {
   data <- categorized_links[[category]]
+  
+  if (nrow(data) == 0) {
+    return(data.frame(link = character(0), category = character(0)))  # Handle empty case
+  }
+  
   data$category <- category
   return(data)
 }))
-
-combined_df <- combined_df %>% 
-  filter(
-    !str_detect(link, "hair|shampoo|conditioner")
-  )
+# 
+# combined_df <- combined_df %>% 
+#   filter(
+#     !str_detect(link, "hair|shampoo|conditioner")
+#   )
 
 # Pass the combined DataFrame to Python
 py$categorized_df <- combined_df
+
 ```
 
 ```{python}
@@ -117,15 +124,7 @@ import time
 import re
 
 #Testing
-test_links = categorized_df['link'][:20]
-
-
-# Filter only the 'cleanser' category
-#cleanser_df = categorized_df[categorized_df['category'] == 'cleanser']
-
-# Select the first 10 links
-#test_links = cleanser_df['link'].head(10).tolist()
-
+test_links = categorized_df['link'][1000:1003]
 
 def scrollDown(driver, n_scroll):
     elem = driver.find_element(By.TAG_NAME, "html")
@@ -138,8 +137,7 @@ def scrollDown(driver, n_scroll):
 options = Options()
 options.add_argument("--disable-gpu")
 
-# options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
+options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.90 Safari/537.36")
 options.add_argument("--disable-blink-features=AutomationControlled")
 
 # Initialize the WebDriver
@@ -164,8 +162,12 @@ for link in test_links:
         
         #Parse Page Source
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-        # Extract brand name
+        
+        # Extract product name
+        prod_name = soup.find('span', {"data-at": "product_name"}).text if prod_name else "N/A"
+        cleaned_name = " ".join(word for word in product_name.split() if word.lower() != "hair")
+        
+         # Extract brand name
         prod_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
         brand_name = prod_element.text.strip() if prod_element else "N/A"
         
@@ -186,8 +188,10 @@ for link in test_links:
         price = soup.find('b', class_='css-0')
         prod_price = price.text.strip() if price else "N/A"
         
-        #Extract product rating class="css-egw4ri e15t7owz0"
-        rating = soup.find_all('span', class_= 'css-egw4ri e15t7owz0')
+        #Extract product rating class="css-egw4ri e15t7owz0" 
+        #rating = soup.find_all("span", attrs={"class": "css-egw4ri e15t7owz0"})
+        rating = soup.find_all("span", class_=re.compile(".*css-egw4ri.*e15t7owz0.*"))
+
 
         # Ensure there's at least one match before accessing index 0
         if rating:
@@ -204,7 +208,7 @@ for link in test_links:
 
         #Extract Description
         # Locate all divs that may contain product descriptions
-        element_desc = soup.find_all('div', class_=['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
+        description_classes = soup.find_all('div', class_=['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
         
         description_tags = ['p', 'b', 'strong']
 
@@ -249,11 +253,10 @@ for link in test_links:
         print(f"Product Description: {prod_desc}")
 
                 
-        #Extract Skin/Hair Types
+        #Extract Skin Types 
         element_types = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
 
         skin_type = "N/A"
-        hair_type = "N/A"
 
         for div in element_types:
           strong_elements = div.find_all(['strong', 'b'])  # Find all <strong> and <b> elements in this div
@@ -267,23 +270,12 @@ for link in test_links:
                 next_container = tag.find_next_sibling()  # Backup check for next sibling
                 if next_container:
                   skin_type = next_container.get_text(strip=True)
-
-            # Extract "Hair Type:"
-            if "Hair Type:" in tag.text:
-              next_text = tag.next_sibling
-              if next_text and next_text.strip():
-                hair_type = next_text.strip()
-              else:
-                next_container = tag.find_next_sibling()
-                if next_container:
-                  hair_type = next_container.get_text(strip=True)
-
+                  
         #Extract Concerns
         element_concerns = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
 
         # Initialize default values
         skin_concerns = "N/A"
-        hair_concerns = "N/A"
 
         for div in element_concerns:
           strong_elements = div.find_all(['strong','b'])  # Find all <strong> elements in this div
@@ -298,26 +290,22 @@ for link in test_links:
                 if next_container:
                   skin_concerns = next_container.get_text(strip=True).replace("-", "")
 
-            if "Hair Concerns:" in tag.text:
-              next_text = tag.next_sibling
-              if next_text and next_text.strip():
-                hair_concerns = next_text.strip().replace("-", "")
-              else:
-                next_container = tag.find_next_sibling()
-                if next_container:
-                  hair_concerns = next_container.get_text(strip=True).replace("-", "")
+            
           # Handle cases where concerns are listed inside separate `<p>` tags
           p_tags = div.find_all('p')
           p_concerns = [p.text.strip().replace("-", "").strip() for p in p_tags if p.text.strip()]
           # If `<p>` contains concerns, update values
           if p_concerns:
-            if "Hair Concerns:" in strong_elements:
-              hair_concerns = ", ".join(p_concerns)  # Join multiple concerns
             if "Skincare Concerns:" in strong_elements:
               skin_concerns = ", ".join(p_concerns)  # Join multiple concerns
+        
+        # filter makeup out 
+        #skin_concerns = skin_concerns if skin_concerns != "N/A" else continue
+        #skin_type = skin_type if skin_type != "N/A" else continue
 
         # Append data
-        products_list.append({"Brand Name": brand_name, 
+        products_list.append({"Brand Name": brand_name,
+                              "Product Name": prod_name,
                               "Product Category": category,
                               "Product Price": prod_price,
                               "Product Rating": prod_rating,
@@ -325,9 +313,7 @@ for link in test_links:
                               "Product Reviews": prod_reviews,
                               "Product Description": prod_desc,
                               "Skin Type": skin_type,
-                              "Hair Type": hair_type,
                               "Skin Concerns": skin_concerns,
-                              "Hair Concerns": hair_concerns,
                               "URL": link})
         #check if it processes link 
         print(f" processed: {link}")
@@ -342,4 +328,8 @@ driver.quit()
 product_df = pd.DataFrame(products_list)
 print(product_df)
 View(product_df)
+```
+
+
+```{python}
 ```
