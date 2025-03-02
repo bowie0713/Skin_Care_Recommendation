@@ -68,8 +68,6 @@ rows_html <- py$rows
 colnames(rows_html) <- c("link")
 
 categories <- list(
-  shampoo = c('shampoo'), 
-  conditioner = c('conditioner'),
   cleanser = c('cleanser', 'cleanse', 'cleansing'),
   cream = c('cream','creme','moisturizer'),
   toner = c('toner'),
@@ -94,9 +92,13 @@ combined_df <- do.call(rbind, lapply(names(categorized_links), function(category
   return(data)
 }))
 
+combined_df <- combined_df %>% 
+  filter(
+    !str_detect(link, "hair|shampoo|conditioner")
+  )
+
 # Pass the combined DataFrame to Python
 py$categorized_df <- combined_df
-
 ```
 
 ```{python}
