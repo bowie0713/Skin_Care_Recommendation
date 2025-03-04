@@ -97,11 +97,6 @@ combined_df <- do.call(rbind, lapply(names(categorized_links), function(category
   data$category <- category
   return(data)
 }))
-# 
-# combined_df <- combined_df %>% 
-#   filter(
-#     !str_detect(link, "hair|shampoo|conditioner")
-#   )
 
 # Pass the combined DataFrame to Python
 py$categorized_df <- combined_df
@@ -165,7 +160,7 @@ for link in test_links:
         
         # Extract product name
         prod_name = soup.find('span', {"data-at": "product_name"}).text if prod_name else "N/A"
-        cleaned_name = " ".join(word for word in product_name.split() if word.lower() != "hair")
+        cleaned_name = " ".join(word for word in prod_name.split() if word.lower() != "hair")
         
          # Extract brand name
         prod_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
@@ -298,11 +293,7 @@ for link in test_links:
           if p_concerns:
             if "Skincare Concerns:" in strong_elements:
               skin_concerns = ", ".join(p_concerns)  # Join multiple concerns
-        
-        # filter makeup out 
-        #skin_concerns = skin_concerns if skin_concerns != "N/A" else continue
-        #skin_type = skin_type if skin_type != "N/A" else continue
-
+  
         # Append data
         products_list.append({"Brand Name": brand_name,
                               "Product Name": prod_name,
@@ -332,4 +323,8 @@ View(product_df)
 
 
 ```{python}
+import pandas as pd
+import os
+
+product_df.to_csv("scraped_sephora_products.csv")
 ```
