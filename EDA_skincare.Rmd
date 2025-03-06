@@ -15,12 +15,54 @@ library(reticulate)
 library(dplyr)
 library(stringr)
 library(readxl)
+library(ggplot2)
 
 ```
 
+### Removing NA's
 
 ```{r}
-scraped_0_600 <- read_excel("Christina0-600.xlsx")
-View(scraped_0_600)
+scraped_sephora <- read_excel("Christina0-600.xlsx")
+colnames(scraped_sephora)
+
+filter <- scraped_sephora  %>% 
+  filter(!(`Skin Type` =="N/A" |`Skin Concerns` == "N/A" | `Product Rating` == "N/A"))
+
+#View(filter)
+sum(is.na(filter))
 ```
 
+### Formatting Price, Rating, Reviews, Size
+
+```{r}
+filter <- filter %>% 
+  mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
+  mutate(
+    `Product Price` = as.numeric(`Product Price`),      # Ensure numeric conversions
+    `Product Rating` = round(as.numeric(`Product Rating`), 1), 
+    `Product Reviews` = as.numeric(`Product Reviews`)) %>% 
+  mutate(`Product Size` = case_when( 
+      `Product Size` == "N/A" ~ "No Size", 
+      TRUE ~ `Product Size`      # change N/A to No size
+    ) )
+
+head(filter)
+```
+
+### Plot Product Rating and Reviews
+
+```{r}
+# Plot distribution of Product Rating
+ggplot(filter, aes(x = `Product Rating`)) +
+  geom_histogram(bins = 30, fill = "darkseagreen1", alpha = 0.7, color = "black") +
+  geom_density(aes(y = ..density.. * 30), color = "deeppink3", size = 1) +  # Overlay density
+  labs(title = "Distribution of Product Ratings", x = "Rating", y = "Count") +
+  theme_minimal()
+
+# Plot distribution of Product Reviews (log scale to handle large variations)
+ggplot(filter, aes(x = `Product Reviews`)) +
+  geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
+  scale_x_log10() +  # Log scale for better visualization
+  labs(title = "Distribution of Product Reviews", x = "Number of Reviews (log10)", y = "Count") +
+  theme_minimal()
+```
