@@ -119,8 +119,7 @@ import time
 import re
 
 #Testing
-#test_links = categorized_df['link'][346:473]
-test_links = categorized_df['link'][346:34]
+test_links = categorized_df['link'][1789:1888]
 
 def scrollDown(driver, n_scroll):
     elem = driver.find_element(By.TAG_NAME, "html")
@@ -165,14 +164,14 @@ for link in test_links:
 
         if prod_name_element:
           prod_name = prod_name_element.text.strip()  # Extract text
-          prod_name = " ".join(word for word in prod_name.split() if word.lower() != "hair")  # Remove "Hair" from product           name
+          prod_name = " ".join(word for word in prod_name.split() if word.lower() != "hair")
         else:
           prod_name = "N/A"  # Default value if not found
 
-         # Extract brand name
+        # Extract brand name
         prod_element = soup.find('a', class_=['css-1kj9pbo e15t7owz0', 'css-wkag1e e15t7owz0'])
         brand_name = prod_element.text.strip() if prod_element else "N/A"
-        
+
         # Removed 'size' from string. 
         #Extract brand size
         size = soup.find(['span', 'div'], class_ = ['css-15ro776', 'css-1wc0aja e15t7owz0'])
@@ -190,71 +189,86 @@ for link in test_links:
         price = soup.find('b', class_='css-0')
         prod_price = price.text.strip() if price else "N/A"
         
-        #Extract product rating class="css-egw4ri e15t7owz0" 
+        #Extract product rating 
         #rating = soup.find_all("span", attrs={"class": "css-egw4ri e15t7owz0"})
-       # rating = soup.find_all("span", class_=re.compile(".*css-egw4ri.*e15t7owz0.*"))
+        # rating = soup.find_all("span", class_=re.compile(".*css-egw4ri.*e15t7owz0.*"))
         rating = soup.find_all('span', class_ = 'css-egw4ri e15t7owz0')
-        # Ensure there's at least one match before accessing index 0
-        if rating:
+        if rating and len(rating) > 0:
           prod_rating = rating[0].text.strip()  # Get first match
         else:
-          prod_rating = "N/A"  # Default value if no match found
+          ratings_section = soup.find('h2', {'data-at': 'ratings_reviews_section'})
+          if ratings_section and "(0)" in ratings_section.text:
+            prod_rating = "0"
+          else:
+            prod_rating = "N/A" 
         
         #Extract brand reviews
         review = soup.find_all('span', class_ = 'css-1dae9ku e15t7owz0')
-        if review:
+        if review and len(review) > 0:
           prod_reviews = review[0].text.strip()  # Get full text
+          prod_reviews = prod_reviews.replace(",", "")  # Remove commas if present
           match = re.search(r'\d+', prod_reviews)  # Extract only the first number
           prod_reviews = match.group(0) if match else "N/A"  # Get the matched number
+        else:
+          # Check for "Ratings & Reviews (0)" when no reviews exist
+          ratings_section = soup.find('h2', {'data-at': 'ratings_reviews_section'})
+          if ratings_section and "(0)" in ratings_section.text:
+            prod_reviews = "0"
+          else:
+            prod_reviews = "N/A"
 
         #Extract Description
         # Locate all divs that may contain product descriptions
-        description_classes = soup.find_all('div', class_=['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
+        description_classes = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0', 'css-12cvig4 e15t7owz0', 'css-eccfzi e15t7owz0', 'css-11gp14a e15t7owz0', 'css-2f6kh5 e15t7owz0']
 
         description_tags = ['p', 'b', 'strong']
 
         # Initialize default value
         prod_desc = "N/A"
 
-        element_desc = []
         for class_name in description_classes:
-          element_desc.extend(soup.find_all('div', class_=class_name))
+          divs = soup.find_all('div', class_=class_name)
 
-        for div in element_desc:
-          for tag in description_tags:
-            element = div.find(tag)
-            # Check if the element contains "What it is:"
-            if element and "What it is:" in element.text:
-            # Extract text while handling possible formatting issues
-              extracted_text = element.get_text(separator=" ", strip=True).replace("What it is:", "").strip()
+          for div in divs:
+            for tag in description_tags:
+              element = div.find(tag, string=lambda text: text and "What it is:" in text)
+              # element = div.find(tag)
+              # Check if the element contains "What it is:"
+              if element: 
 
-            # Case 2: The description follows the tag as a sibling text
-              if not extracted_text and element.next_sibling:
-                extracted_text = element.next_sibling.strip()
+                # Extract text while handling possible formatting issues
+                extracted_text = element.get_text(separator=" ", strip=True).replace("What it is:", "").strip()
 
-            # Case 3: Handle cases where the text is split across multiple <br> tags
-              if not extracted_text:
-                extracted_text = []
-                next_element = element.find_next_sibling(text=True)
-                while next_element:
-                  extracted_text.append(next_element.strip())
-                  next_element = next_element.find_next_sibling(text=True)
-                extracted_text = " ".join(extracted_text).strip()
+                # Case 2: The description follows the tag as a sibling text
+                if not extracted_text and element.next_sibling:
+                  extracted_text = element.next_sibling.strip()
+    
+                # Case 3: The description is inside a `<p>` tag after the strong/b tag if not extracted_text:
+                if not extracted_text:
+                  next_container = element.find_next_sibling("p")
+                  if next_container:
+                    extracted_text = next_container.get_text(strip=True)
+                    
+                # **Case 4: The description is inside a `<div>` right after**
+                if not extracted_text:
+                  next_div = element.find_next_sibling("div")
+                  if next_div:
+                    extracted_text = next_div.get_text(strip=True)
 
-          # If valid text is found, set it and stop searching
-              if extracted_text:
-                prod_desc = extracted_text
-                break # Stop searching once we find a valid description
+                # If valid text is found, set it and stop searching
+                if extracted_text:
+                  prod_desc = extracted_text
+                  break # Stop searching once we find a valid description
 
-          if prod_desc != "N/A":
-            break  # Stop checking other divs once we get the correct description
+            if prod_desc != "N/A":
+              break  # Stop checking other divs once we get the correct description
 
         # Print the extracted product description
         print(f"Product Description: {prod_desc}")
 
 
         #Extract Skin Types
-        element_types = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
+        element_types = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0', 'css-12cvig4 e15t7owz0', 'css-11gp14a e15t7owz0', 'css-2f6kh5 e15t7owz0'])
 
         skin_type = "N/A"
 
@@ -272,7 +286,7 @@ for link in test_links:
                   skin_type = next_container.get_text(strip=True)
 
         #Extract Concerns
-        element_concerns = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0'])
+        element_concerns = soup.find_all('div', class_ = ['css-1v2oqzv e15t7owz0', 'css-1j9v5fd e15t7owz0', 'css-1uzy5bx e15t7owz0', 'css-12cvig4 e15t7owz0', 'css-eccfzi e15t7owz0', 'css-11gp14a e15t7owz0', 'css-2f6kh5 e15t7owz0'])
 
         # Initialize default values
         skin_concerns = "N/A"
@@ -341,6 +355,6 @@ import os
 #Should filter out products that include 'body' or 'hair', we only want skincare**
 
 # Save pandas dataframe to an xlsx file. **[replace with your own path**]
-product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina246-286.xlsx", index = False)
+product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina1789-1888.xlsx", index = False)
 
 ```
