@@ -352,7 +352,27 @@ View(product_df)
 import pandas as pd
 import os
 
-#Should filter out products that include 'body' or 'hair', we only want skincare**
+#product_901_1200_df = product_df
+# COMMENT OUT WHEN FINISHED TO NOT OVERWRITE
+```
+
+```{python}
+import pandas as pd
+import os
+
+# Save pandas dataframe to an xlsx file. **[replace with your own path**]
+product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina246-286.xlsx", index = False)
+
+# dfs = product_901_1200_df  # Start with the available DataFrame
+
+# dfs.to_excel("/Users/fifi/Desktop/Skin_Care_Recommendation/products_601_900_df.xlsx", index=False)
+# print(f"File saved at products_601_900_df.xlsx")
+```
+
+
+```{python}
+import pandas as pd
+import os
 
 # Save pandas dataframe to an xlsx file. **[replace with your own path**]
 product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina1789-1888.xlsx", index = False)
