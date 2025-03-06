@@ -1,0 +1,26 @@
+---
+title: "EDA_skincare"
+author: "Sofia Ward"
+date: "2025-03-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(rvest)
+library(jsonlite)
+library(tidyverse)
+library(reticulate)
+library(dplyr)
+library(stringr)
+library(readxl)
+
+```
+
+
+```{r}
+scraped_0_600 <- read_excel("Christina0-600.xlsx")
+View(scraped_0_600)
+```
+
