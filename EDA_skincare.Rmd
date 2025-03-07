@@ -22,7 +22,12 @@ library(ggplot2)
 ### Removing NA's
 
 ```{r}
-scraped_sephora <- read_excel("Christina0-600.xlsx")
+Christina0_600 <- read_excel("Christina0-600.xlsx")
+fifi601_1200 <- read_excel("fifi601_1200_.xlsx")
+scraped_sephora <- bind_rows(Christina0_600, fifi601_1200)
+
+dim(scraped_sephora)
+
 colnames(scraped_sephora)
 
 filter <- scraped_sephora  %>% 

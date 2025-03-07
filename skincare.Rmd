@@ -52,7 +52,7 @@ with open("sitemap.html", "r", encoding="utf-8") as file:
 ```{r}
 #save sitemap
 sitemap_html <- py$sitemap_html
-writeLines(sitemap_html, "sitemap.html")
+writeLines(sitemap_html, "data/sitemap.html")
 ```
 
 ```{python}
@@ -119,7 +119,7 @@ import time
 import re
 
 #Testing
-test_links = categorized_df['link'][1843:1847]
+test_links = categorized_df['link'][1:2]
 
 def scrollDown(driver, n_scroll):
     elem = driver.find_element(By.TAG_NAME, "html")
@@ -438,16 +438,7 @@ import pandas as pd
 import os
 
 # Save pandas dataframe to an xlsx file. **[replace with your own path**]
-product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina246-286.xlsx", index = False)
+#product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina246-286.xlsx", index = False)
 
 ```
 
-
-```{python}
-import pandas as pd
-import os
-
-# Save pandas dataframe to an xlsx file. **[replace with your own path**]
-product_df.to_excel("/Users/choco/OneDrive/Documents/GitHub/Skin_Care_Recommendation/Christina1789-1888.xlsx", index = False)
-
-```
