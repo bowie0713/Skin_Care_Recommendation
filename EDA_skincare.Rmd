@@ -37,9 +37,7 @@ sum(is.na(filter))
 dim(filter)
 ```
 
-First, we combined each of our each individual scraped data. From there, we filter out
-all the rows/products that have `NA` values from the column Skin Type, Skin Concerns, and
-Prodcut Rating because this implies that the products are not skincare products. 
+First we combined the excel scraped data. From there, we filter out all the rows/products that have `NA` values from the column Skin Type, Skin Concerns, and Product Rating because this implies that the products are not skincare products, but makeup or hair.
 
 ### Formatting Price, Rating, Reviews, Size
 
@@ -47,7 +45,7 @@ Prodcut Rating because this implies that the products are not skincare products.
 library(openxlsx)
 
 filter <- filter %>% 
-  mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
+  mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # remove $ from price
   mutate(
     `Product Price` = as.numeric(`Product Price`),      # Ensure numeric conversions
     `Product Rating` = round(as.numeric(`Product Rating`), 1), 
@@ -64,9 +62,7 @@ write.xlsx(filter, "data/filtered_sephora.xlsx", overwrite = TRUE)
 
 ```
 
-We did some data cleaning for our dataset to remove the `$` sign for our `Product Price`
-column and convert it to numeric columns. We also round all the `Product Rating`
-numbers so that to ensure data consistency. 
+We did some data cleaning for our dataset to remove the `$` sign for our `Product Price` column and convert it to numeric columns for modeling. We also round all the `Product Rating` numbers to ensure data consistency.
 
 ### Plot Product Rating and Reviews
 
