@@ -26,8 +26,6 @@ Christina0_600 <- read_excel("data/final_scraped_1200/Christina0-600.xlsx")
 fifi601_1200 <- read_excel("data/final_scraped_1200/fifi601_1200_.xlsx")
 scraped_sephora <- bind_rows(Christina0_600, fifi601_1200)
 
-dim(scraped_sephora)
-
 colnames(scraped_sephora)
 
 filter <- scraped_sephora  %>% 
@@ -35,7 +33,13 @@ filter <- scraped_sephora  %>%
 
 #View(filter)
 sum(is.na(filter))
+
+dim(filter)
 ```
+
+First, we combined each of our each individual scraped data. From there, we filter out
+all the rows/products that have `NA` values from the column Skin Type, Skin Concerns, and
+Prodcut Rating because this implies that the products are not skincare products. 
 
 ### Formatting Price, Rating, Reviews, Size
 
@@ -59,6 +63,10 @@ write.xlsx(filter, "data/filtered_sephora.xlsx", overwrite = TRUE)
 
 
 ```
+
+We did some data cleaning for our dataset to remove the `$` sign for our `Product Price`
+column and convert it to numeric columns. We also round all the `Product Rating`
+numbers so that to ensure data consistency. 
 
 ### Plot Product Rating and Reviews
 
