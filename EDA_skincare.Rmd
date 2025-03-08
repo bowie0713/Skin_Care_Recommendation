@@ -22,8 +22,8 @@ library(ggplot2)
 ### Removing NA's
 
 ```{r}
-Christina0_600 <- read_excel("Christina0-600.xlsx")
-fifi601_1200 <- read_excel("fifi601_1200_.xlsx")
+Christina0_600 <- read_excel("data/final_scraped_1200/Christina0-600.xlsx")
+fifi601_1200 <- read_excel("data/final_scraped_1200/fifi601_1200_.xlsx")
 scraped_sephora <- bind_rows(Christina0_600, fifi601_1200)
 
 dim(scraped_sephora)
@@ -40,6 +40,8 @@ sum(is.na(filter))
 ### Formatting Price, Rating, Reviews, Size
 
 ```{r}
+library(openxlsx)
+
 filter <- filter %>% 
   mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
   mutate(
@@ -52,6 +54,10 @@ filter <- filter %>%
     ) )
 
 head(filter)
+View(filter)
+write.xlsx(filter, "data/filtered_sephora.xlsx", overwrite = TRUE)
+
+
 ```
 
 ### Plot Product Rating and Reviews
