@@ -199,3 +199,13 @@ give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 ------------------------------------------------------------------------
 
 # EDA Visuals
+
+**don't need a ton for this since we have web scraper**
+
+**rubric:** describes the results of the project in **3 to 5 paragraphs** with **at least 4 different plots or tables**.
+
+If you choose to use an API or build a web scraper, you should then also conduct some EDA (exploratory data analysis) or fit some supervised learning model(s).
+
+------------------------------------------------------------------------
+
+# Conclusion
