@@ -17,6 +17,8 @@ library(dplyr)
 library(stringr)
 library(readxl)
 library(ggplot2)
+library(RColorBrewer)
+
 
 ```
 
@@ -85,7 +87,7 @@ sum(is.na(filter))
 
 2.  **Feature Engineering**: Formatted price, rating, and size for consistency.
 
-```{r}
+```{r, warning = FALSE}
 filter <- filter %>% 
   mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
   mutate(
@@ -97,7 +99,8 @@ filter <- filter %>%
       TRUE ~ `Product Size`      # change N/A to No size
     ) )
 
-head(filter)
+filter %>% 
+  head()
 ```
 
 ## Recommendation System: Content-Based Filtering
@@ -171,7 +174,7 @@ tfidf = TfidfVectorizer()
 tfidf_matrix = tfidf.fit_transform(df_recommend2['string']) 
 ```
 
-1.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
+2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
 
 ```{python}
 
@@ -182,7 +185,7 @@ similarity_df = pd.DataFrame(cosine_similarity, index = df_recommend2['Product N
 similarity_df.head()
 ```
 
-1.  **Recommendation Generation**: For a given product, the system returns the top **10** most similar products based on similarity scores.
+3.  **Recommendation Generation**: For a given product, the system returns the top **10** most similar products based on similarity scores.
 
 ```{python}
 df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
@@ -200,7 +203,82 @@ give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 
 # EDA Visuals
 
-**don't need a ton for this since we have web scraper**
+To better understand the composition and characteristics of the skincare product dataset, we visualized key variables such as product category, rating, price, and number of reviews. 
+
+### Distribution of Product Category
+We begin by examining how the products are distributed across different categories. This helps us identify which types of skincare products are most represented in the dataset.
+
+```{r}
+filter %>%
+  group_by(`Product Category`) %>%
+  summarise(Product_Type = n()) %>%
+  ggplot(aes(x = reorder(`Product Category`, -Product_Type), y = Product_Type, fill = `Product Category`)) +
+  geom_col() +
+  labs(
+    title = "Distribution of Product Types",
+    x = "Product Category",
+    y = "Number of Products"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+  coord_flip() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+From the chart, we see that certain categories like creams and cleansers are more common over toners and serums.
+
+### Plot Product Rating and Reviews
+Next, we want to look at how product ratings are distributed to understand how satisfied customers are with the available skincare products.
+```{r, warning = FALSE}
+# Plot distribution of Product Rating
+ggplot(filter, aes(x = `Product Rating`)) +
+  geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
+  geom_density(aes(y = ..density.. * 30), color = "deeppink3", size = 1) +  # Overlay density
+  labs(title = "Distribution of Product Ratings", x = "Rating", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The majority of products have ratings of 4.5, indicating generally positive customer experiences. There's a visible right-skewed distribution, with very few products receiving low ratings.
+
+### Distribution of Product Reviews
+We also want to see how many customer reviews each product recieved. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
+
+```{r, warning = FALSE}
+# Plot distribution of Product Reviews (log scale to handle large variations)
+ggplot(filter, aes(x = `Product Reviews`)) +
+  geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
+  scale_x_log10() +  # Log scale for better visualization
+  labs(title = "Distribution of Product Reviews", x = "Number of Reviews (log10)", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.4))
+```
+
+This plot reveals that while most products have fewer than 100 reviews, a small number of popular products have received thousands of reviews, making them more influential in the recommendation system.
+
+### Top 10 Most Reviews Skincare Products
+
+To identify the most popular products in our dataset, we plotted the top 10 skincare items based on the number of user reviews. In addition to showing popularity, we added each product’s average rating as a label to reveal how well these bestsellers are actually received by customers.
+```{r}
+filter %>%
+  arrange(desc(`Product Reviews`)) %>%
+  slice(1:10) %>%
+  ggplot(aes(x = reorder(`Product Name`, `Product Reviews`), y = `Product Reviews`)) +
+  geom_col(fill = "skyblue3") +
+  geom_text(aes(label = paste0("⭐ ", round(`Product Rating`, 1))), 
+            hjust = -0.1, size = 3.5, color = "black") +
+  labs(title = "Top 10 Most Reviewed Skincare Products (with Ratings)",
+       x = "Product Name",
+       y = "Number of Reviews") +
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 3)) +
+  ylim(0, max(filter$`Product Reviews`, na.rm = TRUE) * 1.15)
+
+```
+
+We see a wide range of review counts, with all of these products exceeding 5000+ reviews, indicating high visibility and strong customer engagement. Interestingly, not all of the most reviewed products have the highest ratings, highlighting that popularity doesn’t always guarantee satisfaction. For example, some top-reviewed products hover around a 4.2–4.4 rating, while others stand out with ratings closer to 4.8 or above.
+
 
 **rubric:** describes the results of the project in **3 to 5 paragraphs** with **at least 4 different plots or tables**.
 
