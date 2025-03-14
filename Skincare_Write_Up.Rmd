@@ -124,8 +124,8 @@ $$
 
 Where:
 
--    $A \cdot B$ is the dot product of the two vectors,
--    $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
+-   $A \cdot B$ is the dot product of the two vectors,
+-   $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
 
 Using this approach, when a user selects a product, the system finds other products with the highest cosine similarity, ensuring recommendations are tailored to the product’s attributes!
 
@@ -142,7 +142,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import openpyxl
 import string
 
-df = pd.read_excel("/Users/fifi/Desktop/Skin_Care_Recommendation/data/filtered_sephora.xlsx")
+df = pd.read_excel("~Skin_Care_Recommendation/data/filtered_sephora.xlsx")
 df
 
 df_recommend2 = df[["Brand Name", "Product Name", "Product Category", "Product Description", 
@@ -202,7 +202,7 @@ def give_recommendation(product_name):
     print(f"Skin Care Recommendations for customers buying {product_name} :\n")
     print(top_10)
     
-give_recommendation("Mini Fulvic Acid Brightening Cleanser")
+give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 ```
 
 ------------------------------------------------------------------------
@@ -307,7 +307,7 @@ The web scraping process proved to be both tedious and time-consuming, yet it pr
 
 When deciding between collaborative and content-based recommendations for skincare, we quickly recognized the importance of ingredients, skin concerns, skin types, product brand, and name in determining product compatibility. The challenge of scraping detailed reviews and ratings took considerable effort, but these additional factors proved essential in refining the recommendations. We found that content-based filtering using attributes like ingredients and skin concerns was more suited to our goal of providing personalized skincare suggestions without relying on user-specific data, which would raise privacy concerns. Collaborative filtering, while effective in some contexts, would require additional user data that might compromise privacy and was thus not viable for this project.
 
-Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. We also integrated a **rating percentage** to provide additional context for users who might not be as interested in ingredient-based recommendations alone. This hybrid approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
+Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. This approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
 
 #### Future Directions
 
