@@ -34,13 +34,15 @@ With the growing number of skincare products available, choosing the right one f
 
 We wanted to build something that would save users money and time from trying product after product, since everyone's skin is different! Advertising and reviews are misleading since company goals don't align with the user's best interest: finding the right skincare! Our model not only selects products based on similarity, but also incorporates ingredient lists, skin types, and targeted skin concerns. This filtering gives users 10 individually catered products to their specific needs. For user accessibility we chose Sephora's Skincare selection.
 
+![](data/s-l1200.jpg){width="402"}![](data/prod.jpeg){width="217"}
+
 ### Web-scraped Data Description
 
 To build our skincare recommendation system, we collected product data from the Sephora website using web scraping techniques. After checking for permissions, we used the robots.txt file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing Selenium's Webdriver and Beautiful Soup. Filtering cosmetics and hair products left us with a categorized link data frame to begin web-scraping!
 
 We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,800 links** which filtered out to **500 observations and 12 columns.**
 
-```{r}
+```{r, echo = FALSE}
 # Webscraper_skincare.Rmd for full code
 
 filtered_sephora <- read_excel("data/filtered_sephora.xlsx")
@@ -72,7 +74,7 @@ After collecting the raw data, we performed several pre-processing steps:
 
 1.  **Cleaning the Data**: Removed duplicate entries and handled missing values through imputation or deletion.
 
-```{r}
+```{r, echo = FALSE}
 # EDA_skincare.Rmd
 
 Christina0_600 <- read_excel("~/Desktop/Skin_Care_Recommendation/data/final_scraped_1200/Christina0-600.xlsx")
@@ -87,7 +89,7 @@ sum(is.na(filter))
 
 2.  **Feature Engineering**: Formatted price, rating, and size for consistency.
 
-```{r, warning = FALSE}
+```{r, warning = FALSE, echo = FALSE}
 filter <- filter %>% 
   mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
   mutate(
@@ -203,12 +205,14 @@ give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 
 # EDA Visuals
 
-To better understand the composition and characteristics of the skincare product dataset, we visualized key variables such as product category, rating, price, and number of reviews. 
+To better understand the composition and characteristics of the skincare product dataset, we visualized key variables such as product category, rating, price, and number of reviews.
 
 ### Distribution of Product Category
+
 We begin by examining how the products are distributed across different categories. This helps us identify which types of skincare products are most represented in the dataset.
 
-```{r}
+```{r, echo = FALSE}
+
 filter %>%
   group_by(`Product Category`) %>%
   summarise(Product_Type = n()) %>%
@@ -220,16 +224,19 @@ filter %>%
     y = "Number of Products"
   ) +
   theme_minimal() +
-  scale_fill_brewer(palette = "Set2")
-  coord_flip() +
+  scale_fill_brewer(palette = "Set2") + 
+  coord_flip() +  
   theme(plot.title = element_text(hjust = 0.5))
+
 ```
 
 From the chart, we see that certain categories like creams and cleansers are more common over toners and serums.
 
 ### Plot Product Rating and Reviews
+
 Next, we want to look at how product ratings are distributed to understand how satisfied customers are with the available skincare products.
-```{r, warning = FALSE}
+
+```{r, warning = FALSE, echo = FALSE}
 # Plot distribution of Product Rating
 ggplot(filter, aes(x = `Product Rating`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -242,9 +249,11 @@ ggplot(filter, aes(x = `Product Rating`)) +
 The majority of products have ratings of 4.5, indicating generally positive customer experiences. There's a visible right-skewed distribution, with very few products receiving low ratings.
 
 ### Distribution of Product Reviews
+
 We also want to see how many customer reviews each product recieved. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
 
-```{r, warning = FALSE}
+```{r, warning = FALSE, echo = FALSE}
+
 # Plot distribution of Product Reviews (log scale to handle large variations)
 ggplot(filter, aes(x = `Product Reviews`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -259,13 +268,15 @@ This plot reveals that while most products have fewer than 100 reviews, a small 
 ### Top 10 Most Reviews Skincare Products
 
 To identify the most popular products in our dataset, we plotted the top 10 skincare items based on the number of user reviews. In addition to showing popularity, we added each product’s average rating as a label to reveal how well these bestsellers are actually received by customers.
-```{r}
+
+```{r, echo = FALSE}
+# CANT KNIT W STAR EMOJI
 filter %>%
   arrange(desc(`Product Reviews`)) %>%
   slice(1:10) %>%
   ggplot(aes(x = reorder(`Product Name`, `Product Reviews`), y = `Product Reviews`)) +
   geom_col(fill = "skyblue3") +
-  geom_text(aes(label = paste0("⭐ ", round(`Product Rating`, 1))), 
+  geom_text(aes(label = paste0("", round(`Product Rating`, 1))),
             hjust = -0.1, size = 3.5, color = "black") +
   labs(title = "Top 10 Most Reviewed Skincare Products (with Ratings)",
        x = "Product Name",
@@ -278,7 +289,6 @@ filter %>%
 ```
 
 We see a wide range of review counts, with all of these products exceeding 5000+ reviews, indicating high visibility and strong customer engagement. Interestingly, not all of the most reviewed products have the highest ratings, highlighting that popularity doesn’t always guarantee satisfaction. For example, some top-reviewed products hover around a 4.2–4.4 rating, while others stand out with ratings closer to 4.8 or above.
-
 
 **rubric:** describes the results of the project in **3 to 5 paragraphs** with **at least 4 different plots or tables**.
 
