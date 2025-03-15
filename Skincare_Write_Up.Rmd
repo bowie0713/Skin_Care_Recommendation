@@ -316,7 +316,7 @@ If product compatibility (e.g., skin type, concerns) affects satisfaction, then 
 
 ### Distribution of Product Reviews
 
-We also want to see how many customer reviews each product recieved. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
+We also want to see how many customer reviews each product received. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
 
 ```{r, warning = FALSE, echo = F}
 # Plot distribution of Product Reviews (log scale to handle large variations)
@@ -340,7 +340,7 @@ filter %>%
   slice(1:10) %>%
   ggplot(aes(x = reorder(`Product Name`, `Product Reviews`), y = `Product Reviews`)) +
   geom_col(fill = "skyblue3") +
-  geom_text(aes(label = paste0("<3", round(`Product Rating`, 1))),
+  geom_text(aes(label = paste0("<3  ", round(`Product Rating`, 1))),
             hjust = -0.1, size = 3.5, color = "black") +
   labs(title = "Top 10 Most Reviewed Skincare Products (with Ratings)",
        x = "Product Name",
