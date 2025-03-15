@@ -2,7 +2,9 @@
 title: "Skincare Write-Up"
 author: "Sofia Ward / Bowie Chuang / Christina Pham / Carter Kulm"
 date: "2025-03-11"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -42,7 +44,7 @@ To build our skincare recommendation system, we collected product data from the 
 
 We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,800 links** which filtered out to **500 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, warning = FALSE}
 # Webscraper_skincare.Rmd for full code
 # Final loop at appendix
 
@@ -78,11 +80,11 @@ After collecting the raw data, we performed several pre-processing steps:
 ```{r, echo = FALSE}
 # EDA_skincare.Rmd
 
-Christina0_600 <- read_excel("~/Desktop/Skin_Care_Recommendation/data/final_scraped_1200/Christina0-600.xlsx")
-fifi601_1200 <- read_excel("~/Desktop/Skin_Care_Recommendation/data/final_scraped_1200/fifi601_1200_.xlsx")
+Christina0_600 <- read_excel("data/final_scraped_1200/Christina0-600.xlsx")
+fifi601_1200 <- read_excel("data/final_scraped_1200/fifi601_1200_.xlsx")
 scraped_sephora <- bind_rows(Christina0_600, fifi601_1200)
 
-filter <- scraped_sephora  %>% 
+filter <- scraped_sephora  %>%
   filter(!(`Skin Type` =="N/A" |`Skin Concerns` == "N/A" | `Product Rating` == "N/A"))
 
 sum(is.na(filter))
@@ -112,9 +114,11 @@ Our system uses **content-based filtering**, a recommendation approach that sugg
 
 ### **What is Content-Based Filtering?**
 
-Content-based filtering analyzes the characteristics of items to recommend similar products. Instead of relying on user behavior (as in collaborative filtering), it compares the features of a given product to those of other products in the data set.
+Content-based filtering analyzes the characteristics of items to recommend similar products. Instead of relying on user behavior (as in collaborative filtering), it compares the features of a given product to those of other products in the data set. In our project, we used cosine similarity and the sigmoid kernel to generate personalized product recommendations which allows us to explore how different similarity metrics impact recommendation results.
 
-In our case, we represent each skincare product as a **feature vector**, incorporating product descriptions, ingredients, category, skin concerns, and other relevant attributes. The similarity between products is calculated using **cosine similarity**, which measures the angle between two vectors in a multidimensional space. A higher cosine similarity score indicates that two products are more alike.
+### Cosine Similarity Content-Based Recommender System
+
+For the *cosine similarity* based recommender system, we represent each skincare product as a **feature vector**, incorporating product descriptions, ingredients, category, skin concerns, and other relevant attributes. The similarity between products is calculated using **cosine similarity**, which measures the angle between two vectors in a multidimensional space. A higher cosine similarity score indicates that two products are more alike.
 
 Mathematically, cosine similarity between two product vectors **A** and **B** is given by:
 
@@ -124,8 +128,8 @@ $$
 
 Where:
 
--   $A \cdot B$ is the dot product of the two vectors,
--   $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
+-    $A \cdot B$ is the dot product of the two vectors,
+-    $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
 
 Using this approach, when a user selects a product, the system finds other products with the highest cosine similarity, ensuring recommendations are tailored to the product’s attributes!
 
@@ -135,31 +139,31 @@ We implemented the recommendation system in **Python**, using `scikit-learn` for
 
 1.  **Text Vectorization**: We converted textual data (e.g., ingredients, descriptions) into vectors using **TF-IDF (Term Frequency-Inverse Document Frequency)**.
 
-```{python}
+```{python, warning = FALSE}
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 import openpyxl
 import string
 
-df = pd.read_excel("~Skin_Care_Recommendation/data/filtered_sephora.xlsx")
+df = pd.read_excel("data/filtered_sephora.xlsx")
 df
 
-df_recommend2 = df[["Brand Name", "Product Name", "Product Category", "Product Description", 
+df_recommend2 = df[["Brand Name", "Product Name", "Product Category", "Product Rating", "Product Description", 
                     "Product Ingredients", "Skin Type", "Skin Concerns"]]
-df_recommend2_cols = ["Brand Name", "Product Name", "Product Category", "Product Description", 
+df_recommend2_cols = ["Brand Name", "Product Name", "Product Category","Product Rating", "Product Description", 
                     "Product Ingredients", "Skin Type", "Skin Concerns"]
 df_recommend2.columns = df_recommend2_cols
+
 # Select columns
 # concatenate all the strings and then fit it into TfidfVectorizer
-
 df_recommend2['Product Description'] = df_recommend2['Product Description'].fillna(value = "No Description")
 df_recommend2
 
 df_recommend2[df_recommend2['Product Description'].isna()] # final N/A fix
 ```
 
-```{python}
+```{python, warning = FALSE}
 import string
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -182,8 +186,7 @@ tfidf_matrix = tfidf.fit_transform(df_recommend2['string'])
 
 2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
 
-```{python}
-
+```{python, warning = FALSE}
 cosine_similarity = cosine_similarity(tfidf_matrix)
 
 similarity_df = pd.DataFrame(cosine_similarity, index = df_recommend2['Product Name'], columns = df_recommend2['Product Name'])
@@ -194,17 +197,67 @@ similarity_df.head()
 3.  **Recommendation Generation**: For a given product, the system returns the top **10** most recommended products based on similarity scores.
 
 ```{python}
-df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
 def give_recommendation(product_name):
     product_index = similarity_df.index.get_loc(product_name)
-    top_10 = similarity_df.iloc[product_index].sort_values(ascending=False)[1:11]
-    
-    print(f"Skin Care Recommendations for customers buying {product_name} :\n")
-    print(top_10)
-    
+    top_10 = similarity_df.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
+    top_10.columns = ['Product Name', "Similarity Rating"]
+    top10_product_values = pd.Series(top_10.index, index = top_10['Product Name'])
+    top_10['Product Rating'] = df_recommend2["Product Rating"].iloc[top10_product_values].values
+    print(f"Recommendations for customers buying {product_name} :\n")
+    return top_10.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px solid black"})
+  
 give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 ```
+### Sigmoid Kernel Content-Based Recommender System
 
+Next, we implemented another recommender system using the *sigmoid kernel*. This method transforms the similarity computation through a nonlinear function, allowing it to detect nuanced connections that may not be captured by linear measures like cosine similarity.
+
+$$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
+- x: the feature vector representing the input product
+- tanh: The hyperbolic tangent function. 
+- α: A scaling parameter that adjusts how sensitive the kernel is to the similarity score.
+- xᵀ: the transpose of the feature vector representing the input product.
+- B: the feature vector of another product in the dataset that we want to compare with x.
+- xᵀ · y: the dot product between the two vectors.
+- c: a bias term that shifts the output of the kernel function.
+
+
+1. **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
+
+2. **Similarity Calculation**: We compute the pairwise similarities between all items in the tfv_matrix, resulting in a similarity matrix called sig (denoted as S). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (i,𝑗)represents the similarity score between item i and item j based on the sigmoid kernel. To facilitate lookup, we use the Series() function to map product names to their corresponding indices.
+```{python}
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import sigmoid_kernel
+import openpyxl
+import string
+
+sig = sigmoid_kernel(tfidf_matrix, tfidf_matrix)
+df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
+def give_recommendation2(product_name, sig = sig):
+    idx = df_index[product_name]
+    sig_score = list(enumerate(sig[idx]))
+    sig_score = sorted(sig_score, key = lambda x: x[1], reverse = True)# start at 1 to avoid the diagonal/same comparison
+    sig_score = sig_score[1:11]
+    product_indices = [i[0] for i in sig_score]
+    
+    rec_dic = {"No" : range(1,11), 
+               "Product Name" : df_recommend2["Product Name"].iloc[product_indices].values, 
+               "Product Rating": df_recommend2["Product Rating"].iloc[product_indices].values}
+    dataframe = pd.DataFrame(data = rec_dic)
+    dataframe.set_index("No", inplace = True)
+    dataframe['Product Rating'] = dataframe['Product Rating'].round(2)
+    
+    print(f"Skin Care Recommendations for customers buying {product_name} :\n")
+    return dataframe.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px  solid black"})
+```
+
+3.  **Recommendation Generation**: Similarly, for any given product, the system returns the top **10** most recommended products based on similarity scores.
+
+```{python}
+give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
+```
 ------------------------------------------------------------------------
 
 # EDA Visuals
@@ -259,7 +312,6 @@ If product compatibility (e.g., skin type, concerns) affects satisfaction, then 
 We also want to see how many customer reviews each product recieved. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
 
 ```{r, warning = FALSE, echo = FALSE}
-
 # Plot distribution of Product Reviews (log scale to handle large variations)
 ggplot(filter, aes(x = `Product Reviews`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -307,7 +359,7 @@ The web scraping process proved to be both tedious and time-consuming, yet it pr
 
 When deciding between collaborative and content-based recommendations for skincare, we quickly recognized the importance of ingredients, skin concerns, skin types, product brand, and name in determining product compatibility. The challenge of scraping detailed reviews and ratings took considerable effort, but these additional factors proved essential in refining the recommendations. We found that content-based filtering using attributes like ingredients and skin concerns was more suited to our goal of providing personalized skincare suggestions without relying on user-specific data, which would raise privacy concerns. Collaborative filtering, while effective in some contexts, would require additional user data that might compromise privacy and was thus not viable for this project.
 
-Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. This approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
+Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. We also integrated a similarity percentages to provide additional context for users who might not be as interested in ingredient-based recommendations alone. This approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
 
 #### Future Directions
 
