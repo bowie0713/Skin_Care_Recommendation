@@ -5,6 +5,8 @@ date: "2025-03-11"
 output:
   html_document:
     df_print: paged
+  latex_engine: pdflatex
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -20,8 +22,12 @@ library(stringr)
 library(readxl)
 library(ggplot2)
 library(RColorBrewer)
+library(knitr)
 
+# Webscraper_skincare.Rmd for full code
+# Final loop at appendix
 
+filtered_sephora <- read_excel("data/filtered_sephora.xlsx")
 ```
 
 # Curated Sephora Skincare Generator 3000000
@@ -42,16 +48,10 @@ We wanted to build something that would save users money and time from trying pr
 
 To build our skincare recommendation system, we collected product data from the Sephora website using web scraping techniques. After checking for permissions, we used the robots.txt file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing Selenium's Webdriver and Beautiful Soup. Filtering cosmetics and hair products left us with a categorized link data frame to begin web-scraping!
 
-We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,800 links** which filtered out to **500 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
+We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,888 links** which filtered out to **800 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
 
-```{r, echo = FALSE, warning = FALSE}
-# Webscraper_skincare.Rmd for full code
-# Final loop at appendix
-
-filtered_sephora <- read_excel("data/filtered_sephora.xlsx")
-
+```{r warning = FALSE}
 dim(filtered_sephora)
-glimpse(filtered_sephora)
 ```
 
 The data set contains key attributes essential for content-based filtering, including:
@@ -87,12 +87,12 @@ scraped_sephora <- bind_rows(Christina0_600, fifi601_1200)
 filter <- scraped_sephora  %>%
   filter(!(`Skin Type` =="N/A" |`Skin Concerns` == "N/A" | `Product Rating` == "N/A"))
 
-sum(is.na(filter))
+# sum(is.na(filter))
 ```
 
 2.  **Feature Engineering**: Formatted price, rating, and size for consistency.
 
-```{r, warning = FALSE, echo = FALSE}
+```{r, warning = FALSE}
 filter <- filter %>% 
   mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
   mutate(
@@ -105,6 +105,7 @@ filter <- filter %>%
     ) )
 
 filter %>% 
+  select(`Product Price`, `Product Rating`, `Product Reviews`) %>% 
   head()
 ```
 
@@ -139,7 +140,7 @@ We implemented the recommendation system in **Python**, using `scikit-learn` for
 
 1.  **Text Vectorization**: We converted textual data (e.g., ingredients, descriptions) into vectors using **TF-IDF (Term Frequency-Inverse Document Frequency)**.
 
-```{python, warning = FALSE}
+```{python, warning = FALSE, echo = FALSE, message = FALSE}
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -147,7 +148,9 @@ import openpyxl
 import string
 
 df = pd.read_excel("data/filtered_sephora.xlsx")
-df
+
+df = df.drop_duplicates(subset = ['Product Name'])
+# df
 
 df_recommend2 = df[["Brand Name", "Product Name", "Product Category", "Product Rating", "Product Description", 
                     "Product Ingredients", "Skin Type", "Skin Concerns"]]
@@ -158,9 +161,9 @@ df_recommend2.columns = df_recommend2_cols
 # Select columns
 # concatenate all the strings and then fit it into TfidfVectorizer
 df_recommend2['Product Description'] = df_recommend2['Product Description'].fillna(value = "No Description")
-df_recommend2
+# df_recommend2
 
-df_recommend2[df_recommend2['Product Description'].isna()] # final N/A fix
+# df_recommend2[df_recommend2['Product Description'].isna()] # final N/A fix
 ```
 
 ```{python, warning = FALSE}
@@ -182,6 +185,7 @@ df_recommend2['Skin Concerns'].map(remove_punctuation)
 
 tfidf = TfidfVectorizer()
 tfidf_matrix = tfidf.fit_transform(df_recommend2['string']) 
+tfidf_matrix
 ```
 
 2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
@@ -189,7 +193,10 @@ tfidf_matrix = tfidf.fit_transform(df_recommend2['string'])
 ```{python, warning = FALSE}
 cosine_similarity = cosine_similarity(tfidf_matrix)
 
-similarity_df = pd.DataFrame(cosine_similarity, index = df_recommend2['Product Name'], columns = df_recommend2['Product Name'])
+similarity_df = pd.DataFrame(cosine_similarity, 
+                index = df_recommend2['Product Name'], 
+                columns = df_recommend2['Product Name']
+                )
 
 similarity_df.head()
 ```
@@ -225,7 +232,7 @@ $$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
 1. **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
 
 2. **Similarity Calculation**: We compute the pairwise similarities between all items in the tfv_matrix, resulting in a similarity matrix called sig (denoted as S). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (i,𝑗)represents the similarity score between item i and item j based on the sigmoid kernel. To facilitate lookup, we use the Series() function to map product names to their corresponding indices.
-```{python}
+```{python echo = F}
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -268,12 +275,12 @@ To better understand the composition and characteristics of the skincare product
 
 We begin by examining how the products are distributed across different categories. This helps us identify which types of skincare products are most represented in the dataset.
 
-```{r, echo = FALSE}
+```{r echo = F}
 
 filter %>%
   group_by(`Product Category`) %>%
   summarise(Product_Type = n()) %>%
-  ggplot(aes(x = reorder(`Product Category`, -Product_Type), y = Product_Type, fill = `Product Category`)) +
+  ggplot(aes(x = reorder(`Product Category`, -Product_Type), y = Product_Type)) +
   geom_col() +
   labs(
     title = "Distribution of Product Types",
@@ -293,7 +300,7 @@ From the chart, we see that certain categories like creams and cleansers are mor
 
 Next, we want to look at how product ratings are distributed to understand how satisfied customers are with the available skincare products.
 
-```{r, warning = FALSE, echo = FALSE}
+```{r, warning = FALSE, echo = F}
 # Plot distribution of Product Rating
 ggplot(filter, aes(x = `Product Rating`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -311,7 +318,7 @@ If product compatibility (e.g., skin type, concerns) affects satisfaction, then 
 
 We also want to see how many customer reviews each product recieved. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
 
-```{r, warning = FALSE, echo = FALSE}
+```{r, warning = FALSE, echo = F}
 # Plot distribution of Product Reviews (log scale to handle large variations)
 ggplot(filter, aes(x = `Product Reviews`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -327,14 +334,13 @@ This plot reveals that while most products have fewer than 1000 reviews, a small
 
 To identify the most popular products in our dataset, we plotted the top 10 skincare items based on the number of user reviews. In addition to showing popularity, we added each product’s average rating as a label to reveal how well these bestsellers are actually received by customers.
 
-```{r, echo = FALSE}
-# CANT KNIT W STAR EMOJI
+```{r echo = F}
 filter %>%
   arrange(desc(`Product Reviews`)) %>%
   slice(1:10) %>%
   ggplot(aes(x = reorder(`Product Name`, `Product Reviews`), y = `Product Reviews`)) +
   geom_col(fill = "skyblue3") +
-  geom_text(aes(label = paste0("", round(`Product Rating`, 1))),
+  geom_text(aes(label = paste0("<3", round(`Product Rating`, 1))),
             hjust = -0.1, size = 3.5, color = "black") +
   labs(title = "Top 10 Most Reviewed Skincare Products (with Ratings)",
        x = "Product Name",
