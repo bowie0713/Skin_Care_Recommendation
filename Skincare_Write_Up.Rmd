@@ -46,7 +46,7 @@ We wanted to build something that would save users money and time from trying pr
 
 ### Web-scraped Data Description
 
-To build our skincare recommendation system, we collected product data from the Sephora website using web scraping techniques. After checking for permissions, we used the robots.txt file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing Selenium's Webdriver and Beautiful Soup. Filtering cosmetics and hair products left us with a categorized link data frame to begin web-scraping!
+To build our skincare recommendation system, we collected product data from the Sephora website using web scraping techniques. After checking for permissions, we used the robots.txt file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing Beautiful Soup and Selenium's Webdriver. Filtering cosmetics and hair products by key word left us with a categorized link data frame to begin web-scraping!
 
 We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,888 links** which filtered out to **800 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
 
@@ -129,8 +129,8 @@ $$
 
 Where:
 
--    $A \cdot B$ is the dot product of the two vectors,
--    $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
+-   $A \cdot B$ is the dot product of the two vectors,
+-   $\|A\|$ and $\|B\|$ are the magnitudes of the vectors.
 
 Using this approach, when a user selects a product, the system finds other products with the highest cosine similarity, ensuring recommendations are tailored to the product’s attributes!
 
@@ -215,23 +215,31 @@ def give_recommendation(product_name):
   
 give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 ```
+
 ### Sigmoid Kernel Content-Based Recommender System
 
 Next, we implemented another recommender system using the *sigmoid kernel*. This method transforms the similarity computation through a nonlinear function, allowing it to detect nuanced connections that may not be captured by linear measures like cosine similarity.
 
 $$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
-- x: the feature vector representing the input product
-- tanh: The hyperbolic tangent function. 
-- α: A scaling parameter that adjusts how sensitive the kernel is to the similarity score.
-- xᵀ: the transpose of the feature vector representing the input product.
-- B: the feature vector of another product in the dataset that we want to compare with x.
-- xᵀ · y: the dot product between the two vectors.
-- c: a bias term that shifts the output of the kernel function.
 
+-   `x`: the feature vector representing the input product
 
-1. **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
+-   `tanh`: The hyperbolic tangent function.
 
-2. **Similarity Calculation**: We compute the pairwise similarities between all items in the tfv_matrix, resulting in a similarity matrix called sig (denoted as S). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (i,𝑗)represents the similarity score between item i and item j based on the sigmoid kernel. To facilitate lookup, we use the Series() function to map product names to their corresponding indices.
+-   $\alpha$: A scaling parameter that adjusts how sensitive the kernel is to the similarity score.
+
+-   $x^T$: the transpose of the feature vector representing the input product.
+
+-   `B`: the feature vector of another product in the dataset that we want to compare with `x`.
+
+-   $x^T \cdot y$: the dot product between the two vectors.
+
+-   `c`: a bias term that shifts the output of the kernel function.
+
+    **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
+
+-   **Similarity Calculation**: We compute the pairwise similarities between all items in the tfv_matrix, resulting in a similarity matrix called sig (denoted as S). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (i,𝑗)represents the similarity score between item i and item j based on the sigmoid kernel. To facilitate lookup, we use the Series() function to map product names to their corresponding indices.
+
 ```{python echo = F}
 import pandas as pd
 import numpy as np
@@ -265,6 +273,7 @@ def give_recommendation2(product_name, sig = sig):
 ```{python}
 give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
 ```
+
 ------------------------------------------------------------------------
 
 # EDA Visuals
@@ -340,7 +349,7 @@ filter %>%
   slice(1:10) %>%
   ggplot(aes(x = reorder(`Product Name`, `Product Reviews`), y = `Product Reviews`)) +
   geom_col(fill = "skyblue3") +
-  geom_text(aes(label = paste0("<3  ", round(`Product Rating`, 1))),
+  geom_text(aes(label = paste0(":3  ", round(`Product Rating`, 1))),
             hjust = -0.1, size = 3.5, color = "black") +
   labs(title = "Top 10 Most Reviewed Skincare Products (with Ratings)",
        x = "Product Name",
@@ -360,16 +369,20 @@ We see a wide range of review counts, with all of these products exceeding 5000+
 
 The web scraping process proved to be both tedious and time-consuming, yet it provided us with a wealth of data—twelve columns' worth of valuable information. Navigating through HTML was akin to deciphering someone else's code, and yet rewarding once finished! Extensive trial and error gained crucial insights that would've saved us time in the long run:
 
-1.  Filtering broken links before running the Chromedriver and scraping mass link lists
-2.  Scraping individual column attributes one at a time for easier debugging and efficient dataframe appending
+-   Filtering broken links before running the Chromedriver and scraping mass link lists
+-   Scraping individual column attributes one at a time for easier debugging and efficient dataframe appending
 
 When deciding between collaborative and content-based recommendations for skincare, we quickly recognized the importance of ingredients, skin concerns, skin types, product brand, and name in determining product compatibility. The challenge of scraping detailed reviews and ratings took considerable effort, but these additional factors proved essential in refining the recommendations. We found that content-based filtering using attributes like ingredients and skin concerns was more suited to our goal of providing personalized skincare suggestions without relying on user-specific data, which would raise privacy concerns. Collaborative filtering, while effective in some contexts, would require additional user data that might compromise privacy and was thus not viable for this project.
 
-Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. We also integrated a similarity percentages to provide additional context for users who might not be as interested in ingredient-based recommendations alone. This approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
+Our final system uses the product attributes from Sephora's list—ingredients, skin concerns, and brand names—to recommend similar skincare products. We also integrated a similarity percentage to provide additional context for users who might not be as interested in ingredient-based recommendations alone. This approach balances personalization with respect for privacy, delivering a recommendation system that is both effective and ethical.
 
-#### Future Directions
+### Limitations
 
-While our approach was successful, future improvements could focus on enhancing the data quality, refining recommendation accuracy, and incorporating user feedback. Further exploration into hybrid recommendation models, as well as exploring sentiment analysis of reviews, could lead to more personalized and robust results.
+One notable limitation of our approach is that not all targeted products were successfully scraped. Since we filtered products based on name keywords, some relevant items might have been inadvertently excluded due to inconsistencies in naming conventions or variations in product listings. This constraint may have affected the breadth of our dataset and, consequently, the diversity of recommendations available to users.
+
+### Future Directions
+
+While our approach was successful, future improvements could focus on enhancing data quality, refining recommendation accuracy, and incorporating user feedback. Further exploration into hybrid recommendation models, as well as sentiment analysis of reviews, could lead to more personalized and robust results. Additionally, refining our scraping methodology to capture a more comprehensive product list would help ensure a broader and more inclusive recommendation system.
 
 ------------------------------------------------------------------------
 
