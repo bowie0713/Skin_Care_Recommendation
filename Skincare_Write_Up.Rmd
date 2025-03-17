@@ -26,6 +26,7 @@ library(knitr)
 
 # Webscraper_skincare.Rmd for full code
 # Final loop at appendix
+use_python("/opt/anaconda3/bin/python", required = T)
 
 filtered_sephora <- read_excel("data/filtered_sephora.xlsx")
 ```
@@ -208,8 +209,7 @@ def give_recommendation(product_name):
     product_index = similarity_df.index.get_loc(product_name)
     top_10 = similarity_df.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
     top_10.columns = ['Product Name', "Similarity Rating"]
-    top10_product_values = pd.Series(top_10.index, index = top_10['Product Name'])
-    top_10['Product Rating'] = df_recommend2["Product Rating"].iloc[top10_product_values].values
+    top_10 = top_10.merge(df_recommend2[['Product Name', 'Product Rating']], on="Product Name", how="left")
     print(f"Recommendations for customers buying {product_name} :\n")
     return top_10.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px solid black"})
   
@@ -232,13 +232,11 @@ $$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
 
 -   `B`: the feature vector of another product in the dataset that we want to compare with `x`.
 
--   $x^T \cdot y$: the dot product between the two vectors.
+-   $x^T \cdot y$ : the dot product between the two vectors.
 
 -   `c`: a bias term that shifts the output of the kernel function.
 
-    **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
-
--   **Similarity Calculation**: We compute the pairwise similarities between all items in the tfv_matrix, resulting in a similarity matrix called sig (denoted as S). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (i,𝑗)represents the similarity score between item i and item j based on the sigmoid kernel. To facilitate lookup, we use the Series() function to map product names to their corresponding indices.
+1.  **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
 
 ```{python echo = F}
 import pandas as pd
@@ -247,7 +245,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import sigmoid_kernel
 import openpyxl
 import string
+```
 
+2.  **Similarity Calculation**: We compute the pairwise similarities between all items in the `tfv_matrix`, resulting in a similarity matrix called `sig` (denoted as `S`). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (`i`,`j`) represents the similarity score between item `i` and item `j` based on the sigmoid kernel. To facilitate lookup functionality, we use the `Series()` function to map product names to their corresponding indices.
+
+```{python}
 sig = sigmoid_kernel(tfidf_matrix, tfidf_matrix)
 df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
 def give_recommendation2(product_name, sig = sig):
@@ -274,6 +276,84 @@ def give_recommendation2(product_name, sig = sig):
 give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
 ```
 
+### Cosine Similarity Content-Based Recommender System with Added Weight
+
+1.  **Text Vectorization**: We implemented the same process as our cosine similarity recommender system, converting textual data (e.g., ingredients, descriptions) into vectors using TF-IDF (Term Frequency-Inverse Document Frequency). In addition, **we added** **weight to `Brand Name` and `Product Category`** for a fine-tuned similarity calculation.
+
+```{python}
+df_recommend2['string2'] = (df_recommend2['Brand Name'].map(remove_punctuation) + " ")*4 + \
+df_recommend2['Product Name'].map(remove_punctuation) + " " + \
+(df_recommend2['Product Category'].map(remove_punctuation) + " ")*4 + \
+df_recommend2['Product Description'].map(remove_punctuation) + " " + \
+df_recommend2['Product Ingredients'].map(remove_punctuation) + " " + \
+df_recommend2['Skin Type'].map(remove_punctuation) + " " + \
+df_recommend2['Skin Concerns'].map(remove_punctuation)
+
+tfidf2 = TfidfVectorizer()
+tfidf_matrix2 = tfidf2.fit_transform(df_recommend2['string2'])
+```
+
+2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
+
+```{python, warning = FALSE}
+import pandas as pd
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+cosine_similarity2 = cosine_similarity(tfidf_matrix2)
+similarity_df2 = pd.DataFrame(cosine_similarity2, 
+                index = df_recommend2['Product Name'], 
+                columns = df_recommend2['Product Name']
+                )
+similarity_df2.head()
+```
+
+3.  **Recommendation Generation**: Just like the previous two, for any given product, our recommender system returns the top **10** most recommended products based on similarity scores.
+
+```{python}
+def give_recommendation3(product_name):
+    product_index = similarity_df2.index.get_loc(product_name)
+    top_10 = similarity_df2.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
+    top_10.columns = ['Product Name', "Similarity Rating"]
+    top10_product_values = pd.Series(top_10.index, index = top_10['Product Name'])
+    top_10['Product Rating'] = df_recommend2["Product Rating"].iloc[top10_product_values].values
+    print(f"Recommendations for customers buying {product_name} :\n")
+    return top_10.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px solid black"})
+
+give_recommendation3("Vinoclean Gentle Cleansing Almond Milk")
+```
+
+### Comparing Sigmoid Kernel vs. Cosine Similarity Approaches
+
+We have tested three different recommender system approaches for skincare product recommendations, each with distinct methodologies and results.
+
+1.  **Cosine Similarity with TF-IDF**
+
+-   Top similarity score: 0.456%
+
+-   Best-rated recommendation: 4.2 out of 5 stars
+
+2.  **Sigmoid Kernel Similarity**
+
+-   Best-rated recommendation: 4.2 out of 5 stars
+
+-   Limitation: Returned fewer relevant recommendations compared to other approaches.
+
+**Cosine Similarity with Weight Adjustment (Product Category & Brand Emphasis)**
+
+-   Top similarity score: 0.56%
+
+-   Best-rated recommendation: 4.1 out of 5 stars
+
+-   Most effective method, as it improved similarity rankings while maintaining high-rated recommendations.
+
+Among the three models, **Cosine Similarity with Weight Adjustment** proved to be the most effective. By emphasizing product category and brand names, this approach significantly improved similarity scores, aligning better with user expectations.
+
+-   **Product category weighting** was prioritized since users typically search for a specific type of product (e.g., cleanser or moisturizer) rather than an exact brand or formula.
+
+-   **Brand weighting** was introduced based on the dominance of branding in the skincare industry, particularly in a consumer-driven, brand-loyal market like the U.S.
+
+While weighting is inherently subjective, our choice reflects practical consumer behavior patterns, resulting in a more targeted and relevant recommendation system.
+
 ------------------------------------------------------------------------
 
 # EDA Visuals
@@ -289,7 +369,7 @@ We begin by examining how the products are distributed across different categori
 filter %>%
   group_by(`Product Category`) %>%
   summarise(Product_Type = n()) %>%
-  ggplot(aes(x = reorder(`Product Category`, -Product_Type), y = Product_Type)) +
+  ggplot(aes(x = reorder(`Product Category`, -Product_Type), y = Product_Type, fill = Product_Type)) +
   geom_col() +
   labs(
     title = "Distribution of Product Types",
@@ -297,7 +377,6 @@ filter %>%
     y = "Number of Products"
   ) +
   theme_minimal() +
-  scale_fill_brewer(palette = "Set2") + 
   coord_flip() +  
   theme(plot.title = element_text(hjust = 0.5))
 
