@@ -1,5 +1,6 @@
 ---
-title: "Skincare Write-Up"
+title: "Sephora: Curated Skincare"
+subtitle: "Content-Based Filtering Recommendation System"
 author: "Sofia Ward / Bowie Chuang / Christina Pham / Carter Kulm"
 date: "2025-03-11"
 output:
@@ -8,6 +9,8 @@ output:
   latex_engine: pdflatex
   pdf_document: default
 ---
+
+![](data/images/tone.jpg){width="273"}![](data/images/skin.jpg){width="409"}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -24,6 +27,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(knitr)
 
+
 # Webscraper_skincare.Rmd for full code
 # Final loop at appendix
 use_python("/opt/anaconda3/bin/python", required = T)
@@ -31,44 +35,43 @@ use_python("/opt/anaconda3/bin/python", required = T)
 filtered_sephora <- read_excel("data/filtered_sephora.xlsx")
 ```
 
-# Curated Sephora Skincare Generator 3000000
-
-## Content Based Filtering Recommendation System
-
-------------------------------------------------------------------------
+\newpage
 
 # Introduction
 
 With the growing number of skincare products available, choosing the right one for an individual’s specific needs can be overwhelming. To help users navigate this vast selection, we developed a content-based skincare recommendation system that suggests products based on their attributes and similarity to other items.
 
-We wanted to build something that would save users money and time from trying product after product, since everyone's skin is different! Advertising and reviews are misleading since company goals don't align with the user's best interest: finding the right skincare! Our model not only selects products based on similarity, but also incorporates ingredient lists, skin types, and targeted skin concerns. This filtering gives users 10 individually catered products to their specific needs. For user accessibility we chose Sephora's Skincare selection.
+We wanted to build something that would save users money and time from trying product after product, since everyone's skin is different! Misleading advertisements and fake reviews help corporations achieve profit goals while neglecting customers' best interests: finding the right skincare. Our model not only selects products based on similarity, but also incorporates ingredient lists, skin types, and targeted skin concerns. This filtering gives users **10 curated products** to their specific needs. For user accessibility, we chose Sephora's Skincare selection.
 
-![](data/s-l1200.jpg){width="402"}![](data/prod.jpeg){width="217"}
+![](data/images/s-l1200.jpg){width="402"}![](data/images/prod.jpeg){width="217"}
 
 ### Web-scraped Data Description
 
-To build our skincare recommendation system, we collected product data from the Sephora website using web scraping techniques. After checking for permissions, we used the robots.txt file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing Beautiful Soup and Selenium's Webdriver. Filtering cosmetics and hair products by key word left us with a categorized link data frame to begin web-scraping!
+To build our system, we collected product data via web scraping from Sephora's website. After checking for permissions, we used the `robots.txt` file to acquire an html of [product links](https://www.sephora.com/sitemaps/products-sitemap_en-CA.xml), utilizing `Beautiful Soup` and `Selenium`'s Webdriver. Filtering cosmetics and hair products by key word left us with a `categorized_links` data frame to begin web-scraping!
 
-We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less N/A's. Altogether we scraped **1,888 links** which filtered out to **800 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
+We encountered several obstacles but through trial and error extracted our information; pop-up ads, scroll-down functionality, custom user-agent strings to avoid bot detection. Scraping itself took copious amounts of time, and we found that smaller segments extracted less `N/A`'s.
 
-```{r warning = FALSE}
+```{r, warning = FALSE}
 dim(filtered_sephora)
 ```
 
-The data set contains key attributes essential for content-based filtering, including:
+Altogether we scraped **1,888 links** which filtered to almost **800 observations and 12 columns.** The final scraping loop is provided in the appendix of this report.
 
--   **Product Name**: The name of the skincare product.
--   **Brand**: The company or brand that manufactures the product.
--   **Category**: The type of product: exfoliates, cleansers, toners, serums, moisturizer, masks).
--   **Price**: The cost of the product in USD.
--   **Reviews**: The number of user reviews for the product.
--   **Size**: The quantity of the product (e.g., 100ml, 1.7oz).
--   **Ingredients**: A list of active and inactive ingredients.
--   **Description**: A textual summary of the product, often provided by the brand or Sephora.
--   **Skin Concern**: The specific skin issues the product addresses (e.g., acne, dryness, hyper-pigmentation).
--   **Skin Type**: The recommended skin types for the product (e.g., oily, dry, combination).
+| Variable Name | Variable Type | Description |
+|-------------------|-------------------|----------------------------------|
+| `Product Name` | Character | The name of the skincare product. |
+| `Product Brand` | Character | The company or brand that manufactures the product. |
+| `Product Category` | Character | The type of product: exfoliates, cleansers, toners, serums, moisturizers, masks. |
+| `Product Price` | Double | The cost of the product in USD. |
+| `Product Rating` | Double | The star rating out of 5 for the product. |
+| `Product Reviews` | Double | The number of user reviews for the product. |
+| `Product Size` | Character | The quantity of the product (e.g., 100ml, 1.7oz). |
+| `Product Ingredients` | Character | A list of active and inactive ingredients. |
+| `Product Description` | Character | A textual summary of the product, often provided by the brand or Sephora. |
+| `Skin Concern` | Character | The specific skin issues the product addresses (e.g., acne, dryness, hyper-pigmentation). |
+| `Skin Type` | Character | The recommended skin types for the product (e.g., oily, dry, combination). |
 
-------------------------------------------------------------------------
+\newpage
 
 # Methodology
 
@@ -94,16 +97,15 @@ filter <- scraped_sephora  %>%
 2.  **Feature Engineering**: Formatted price, rating, and size for consistency.
 
 ```{r, warning = FALSE}
-filter <- filter %>% 
-  mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  # take $ out of price
-  mutate(
-    `Product Price` = as.numeric(`Product Price`),      # Ensure numeric conversions
+filter <- filter %>%                # take $ out of price
+  mutate(across(`Product Price`, ~ as.numeric(gsub("\\$", "", .)))) %>%  
+  mutate(                          # Ensure numeric conversions
+    `Product Price` = as.numeric(`Product Price`),      
     `Product Rating` = round(as.numeric(`Product Rating`), 1), 
     `Product Reviews` = as.numeric(`Product Reviews`)) %>% 
   mutate(`Product Size` = case_when( 
       `Product Size` == "N/A" ~ "No Size", 
-      TRUE ~ `Product Size`      # change N/A to No size
-    ) )
+      TRUE ~ `Product Size`))      # change N/A to No size
 
 filter %>% 
   select(`Product Price`, `Product Rating`, `Product Reviews`) %>% 
@@ -139,7 +141,7 @@ Using this approach, when a user selects a product, the system finds other produ
 
 We implemented the recommendation system in **Python**, using `scikit-learn` for text vectorization and similarity computations. The key steps include:
 
-1.  **Text Vectorization**: We converted textual data (e.g., ingredients, descriptions) into vectors using **TF-IDF (Term Frequency-Inverse Document Frequency)**.
+1.  **Text Vectorization**: We converted textual data (e.g., ingredients, descriptions) into vectors using TF-IDF (Term Frequency-Inverse Document Frequency).
 
 ```{python, warning = FALSE, echo = FALSE, message = FALSE}
 import pandas as pd
@@ -149,25 +151,28 @@ import openpyxl
 import string
 
 df = pd.read_excel("data/filtered_sephora.xlsx")
-
 df = df.drop_duplicates(subset = ['Product Name'])
-# df
 
-df_recommend2 = df[["Brand Name", "Product Name", "Product Category", "Product Rating", "Product Description", 
-                    "Product Ingredients", "Skin Type", "Skin Concerns"]]
-df_recommend2_cols = ["Brand Name", "Product Name", "Product Category","Product Rating", "Product Description", 
-                    "Product Ingredients", "Skin Type", "Skin Concerns"]
+df_recommend2 = df[["Brand Name","Product Name",
+                    "Product Category", "Product Rating", 
+                    "Product Description", "Product Ingredients",
+                    "Skin Type", "Skin Concerns"]]
+                    
+df_recommend2_cols = ["Brand Name", "Product Name",
+                      "Product Category","Product Rating",
+                      "Product Description", "Product Ingredients",
+                      "Skin Type", "Skin Concerns"]
+                      
 df_recommend2.columns = df_recommend2_cols
 
 # Select columns
 # concatenate all the strings and then fit it into TfidfVectorizer
 df_recommend2['Product Description'] = df_recommend2['Product Description'].fillna(value = "No Description")
-# df_recommend2
 
 # df_recommend2[df_recommend2['Product Description'].isna()] # final N/A fix
 ```
 
-```{python, warning = FALSE}
+```{python, warning = FALSE, message = FALSE, echo = FALSE}
 import string
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -186,7 +191,9 @@ df_recommend2['Skin Concerns'].map(remove_punctuation)
 
 tfidf = TfidfVectorizer()
 tfidf_matrix = tfidf.fit_transform(df_recommend2['string']) 
-tfidf_matrix
+
+tfidf_matrix_dense = tfidf_matrix.todense()  # Convert sparse matrix to dense matrix
+tfidf_matrix_dense;
 ```
 
 2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
@@ -198,8 +205,7 @@ similarity_df = pd.DataFrame(cosine_similarity,
                 index = df_recommend2['Product Name'], 
                 columns = df_recommend2['Product Name']
                 )
-
-similarity_df.head()
+similarity_df.iloc[2:6, 2:6]
 ```
 
 3.  **Recommendation Generation**: For a given product, the system returns the top **10** most recommended products based on similarity scores.
@@ -209,9 +215,12 @@ def give_recommendation(product_name):
     product_index = similarity_df.index.get_loc(product_name)
     top_10 = similarity_df.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
     top_10.columns = ['Product Name', "Similarity Rating"]
-    top_10 = top_10.merge(df_recommend2[['Product Name', 'Product Rating']], on="Product Name", how="left")
+    top_10 = top_10.merge(df_recommend2[['Product Name', 'Product Rating']],
+    on="Product Name", how="left")
     print(f"Recommendations for customers buying {product_name} :\n")
-    return top_10.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px solid black"})
+    return top_10.style.set_properties(
+    **{"background-color": "white","color":"black",
+    "border": "1.5px solid black"})
   
 give_recommendation("Vinoclean Gentle Cleansing Almond Milk")
 ```
@@ -222,19 +231,15 @@ Next, we implemented another recommender system using the *sigmoid kernel*. This
 
 $$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
 
--   `x`: the feature vector representing the input product
-
--   `tanh`: The hyperbolic tangent function.
-
--   $\alpha$: A scaling parameter that adjusts how sensitive the kernel is to the similarity score.
-
--   $x^T$: the transpose of the feature vector representing the input product.
-
--   `B`: the feature vector of another product in the dataset that we want to compare with `x`.
-
--   $x^T \cdot y$ : the dot product between the two vectors.
-
--   `c`: a bias term that shifts the output of the kernel function.
+| Variable Name | Variable Type | Description |
+|------------------|-------------------|----------------------------------|
+| `x` | Feature Vector | The feature vector representing the input product. |
+| `tanh` | Mathematical Function | The hyperbolic tangent function. |
+| $\alpha$ | Scalar | A scaling parameter that adjusts how sensitive the kernel is to the similarity score. |
+| $x^T$ | Feature Vector | The transpose of the feature vector representing the input product. |
+| `B` | Feature Vector | The feature vector of another product in the dataset that we want to compare with `x`. |
+| $x^T \cdot y$ | Dot Product | The dot product between the two vectors. |
+| `c` | Scalar | A bias term that shifts the output of the kernel function. |
 
 1.  **Text Vectorization**: We use the same text vectorization as our cosine similarity recommender system.
 
@@ -255,19 +260,23 @@ df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
 def give_recommendation2(product_name, sig = sig):
     idx = df_index[product_name]
     sig_score = list(enumerate(sig[idx]))
-    sig_score = sorted(sig_score, key = lambda x: x[1], reverse = True)# start at 1 to avoid the diagonal/same comparison
+    sig_score = sorted(sig_score, key = lambda x: x[1], reverse = True)
+    # start at 1 to avoid the diagonal/same comparison
     sig_score = sig_score[1:11]
     product_indices = [i[0] for i in sig_score]
     
     rec_dic = {"No" : range(1,11), 
-               "Product Name" : df_recommend2["Product Name"].iloc[product_indices].values, 
-               "Product Rating": df_recommend2["Product Rating"].iloc[product_indices].values}
+               "Product Name" : 
+                 df_recommend2["Product Name"].iloc[product_indices].values, 
+               "Product Rating": 
+                 df_recommend2["Product Rating"].iloc[product_indices].values}
     dataframe = pd.DataFrame(data = rec_dic)
     dataframe.set_index("No", inplace = True)
     dataframe['Product Rating'] = dataframe['Product Rating'].round(2)
     
     print(f"Skin Care Recommendations for customers buying {product_name} :\n")
-    return dataframe.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px  solid black"})
+    return dataframe.style.set_properties(
+    **{"background-color": "white","color":"black","border": "1.5px  solid black"})
 ```
 
 3.  **Recommendation Generation**: Similarly, for any given product, the system returns the top **10** most recommended products based on similarity scores.
@@ -278,9 +287,9 @@ give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
 
 ### Cosine Similarity Content-Based Recommender System with Added Weight
 
-1.  **Text Vectorization**: We implemented the same process as our cosine similarity recommender system, converting textual data (e.g., ingredients, descriptions) into vectors using TF-IDF (Term Frequency-Inverse Document Frequency). In addition, **we added** **weight to `Brand Name` and `Product Category`** for a fine-tuned similarity calculation.
+1.  **Text Vectorization**: We implemented the same process as our cosine similarity recommender system, converting textual data (e.g., ingredients, descriptions) into vectors using TF-IDF. In addition, **we added** **weight to** `Brand Name` **and** `Product Category` for a fine-tuned similarity calculation.
 
-```{python}
+```{python, echo = FALSE, warning = FALSE, message = FALSE}
 df_recommend2['string2'] = (df_recommend2['Brand Name'].map(remove_punctuation) + " ")*4 + \
 df_recommend2['Product Name'].map(remove_punctuation) + " " + \
 (df_recommend2['Product Category'].map(remove_punctuation) + " ")*4 + \
@@ -317,7 +326,8 @@ def give_recommendation3(product_name):
     top10_product_values = pd.Series(top_10.index, index = top_10['Product Name'])
     top_10['Product Rating'] = df_recommend2["Product Rating"].iloc[top10_product_values].values
     print(f"Recommendations for customers buying {product_name} :\n")
-    return top_10.style.set_properties(**{"background-color": "white","color":"black","border": "1.5px solid black"})
+    return top_10.style.set_properties(
+    **{"background-color": "white","color":"black","border": "1.5px solid black"})
 
 give_recommendation3("Vinoclean Gentle Cleansing Almond Milk")
 ```
@@ -326,13 +336,13 @@ give_recommendation3("Vinoclean Gentle Cleansing Almond Milk")
 
 We have tested three different recommender system approaches for skincare product recommendations, each with distinct methodologies and results.
 
-1.  **Cosine Similarity with TF-IDF**
+**Cosine Similarity with TF-IDF**
 
 -   Top similarity score: 0.456%
 
 -   Best-rated recommendation: 4.2 out of 5 stars
 
-2.  **Sigmoid Kernel Similarity**
+**Sigmoid Kernel Similarity**
 
 -   Best-rated recommendation: 4.2 out of 5 stars
 
@@ -346,15 +356,15 @@ We have tested three different recommender system approaches for skincare produc
 
 -   Most effective method, as it improved similarity rankings while maintaining high-rated recommendations.
 
-Among the three models, **Cosine Similarity with Weight Adjustment** proved to be the most effective. By emphasizing product category and brand names, this approach significantly improved similarity scores, aligning better with user expectations.
+*Among the three models, **Cosine Similarity with Weight Adjustment** proved to be the most effective. By emphasizing product category and brand names, this approach significantly improved similarity scores, aligning better with user expectations.*
 
--   **Product category weighting** was prioritized since users typically search for a specific type of product (e.g., cleanser or moisturizer) rather than an exact brand or formula.
+-   Product category weighting was prioritized since users typically search for a specific type of product (e.g., cleanser or moisturizer) rather than an exact brand or formula.
 
--   **Brand weighting** was introduced based on the dominance of branding in the skincare industry, particularly in a consumer-driven, brand-loyal market like the U.S.
+-   Brand weighting was introduced based on the dominance of branding in the skincare industry, particularly in a consumer-driven, brand-loyal market like the U.S.
 
 While weighting is inherently subjective, our choice reflects practical consumer behavior patterns, resulting in a more targeted and relevant recommendation system.
 
-------------------------------------------------------------------------
+\newpage
 
 # EDA Visuals
 
@@ -382,7 +392,7 @@ filter %>%
 
 ```
 
-From the chart, we see that certain categories like creams and cleansers are more common over toners and serums. Many users don't have multi-step skincare routines including serum and toner steps due to cost of time and money. Similarly, some skin types are best left alone, and only moisturizer is used which reflects this disproportional bar chart. All in all, users commonly buy and review moisturizers consistently regardless of skin type.
+From the chart, we see that certain categories like creams and cleansers are more common over toners and serums. Many users don't have multi-step skincare routines including serum and toner steps due to cost of time and money. Similarly, some skin types are best left alone, and only moisturizer is used which reflects this disproportional bar chart. Altogther, users commonly buy and review moisturizers consistently regardless of skin type.
 
 ### Plot Product Rating and Reviews
 
@@ -442,11 +452,11 @@ filter %>%
 
 We see a wide range of review counts, with all of these products exceeding 5000+ reviews, indicating high visibility and strong customer engagement. Interestingly, not all of the most reviewed products have the highest ratings, highlighting that popularity doesn’t always guarantee satisfaction. For example, some top-reviewed products hover around a 4.2–4.4 rating, while others stand out with ratings closer to 4.8 or above.
 
-------------------------------------------------------------------------
+\newpage
 
 # Conclusion
 
-The web scraping process proved to be both tedious and time-consuming, yet it provided us with a wealth of data—twelve columns' worth of valuable information. Navigating through HTML was akin to deciphering someone else's code, and yet rewarding once finished! Extensive trial and error gained crucial insights that would've saved us time in the long run:
+The web scraping process proved to be both tedious and time-consuming, yet it provided us with a wealth of data—twelve columns' worth of valuable information. Navigating through HTML was frustrating, and yet rewarding once finished! Extensive trial and error gained crucial insights that would've saved us time in the long run:
 
 -   Filtering broken links before running the Chromedriver and scraping mass link lists
 -   Scraping individual column attributes one at a time for easier debugging and efficient dataframe appending
@@ -463,7 +473,7 @@ One notable limitation of our approach is that not all targeted products were su
 
 While our approach was successful, future improvements could focus on enhancing data quality, refining recommendation accuracy, and incorporating user feedback. Further exploration into hybrid recommendation models, as well as sentiment analysis of reviews, could lead to more personalized and robust results. Additionally, refining our scraping methodology to capture a more comprehensive product list would help ensure a broader and more inclusive recommendation system.
 
-------------------------------------------------------------------------
+\newpage
 
 # Appendix
 
