@@ -2,10 +2,11 @@
 title: "Sephora: Curated Skincare"
 subtitle: "Content-Based Filtering Recommendation System"
 author: "Sofia Ward / Bowie Chuang / Christina Pham / Carter Kulm"
-date: "2025-03-11"
+date: "2025-03-19"
 output:
   html_document:
     df_print: paged
+    code_folding: hide
   latex_engine: pdflatex
   pdf_document: default
 ---
@@ -172,7 +173,7 @@ df_recommend2['Product Description'] = df_recommend2['Product Description'].fill
 # df_recommend2[df_recommend2['Product Description'].isna()] # final N/A fix
 ```
 
-```{python, warning = FALSE, message = FALSE, echo = FALSE}
+```{python, warning = FALSE, message = FALSE, class.source = "fold-show"}
 import string
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -198,19 +199,19 @@ tfidf_matrix_dense;
 
 2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
 
-```{python, warning = FALSE}
+```{python, warning = FALSE, class.source = "fold-show"}
 cosine_similarity = cosine_similarity(tfidf_matrix)
 
 similarity_df = pd.DataFrame(cosine_similarity, 
                 index = df_recommend2['Product Name'], 
                 columns = df_recommend2['Product Name']
                 )
-similarity_df.iloc[2:6, 2:6]
+# similarity_df.iloc[2:6, 2:6]
 ```
 
 3.  **Recommendation Generation**: For a given product, the system returns the top **10** most recommended products based on similarity scores.
 
-```{python}
+```{python, class.source = "fold-show"}
 def give_recommendation(product_name):
     product_index = similarity_df.index.get_loc(product_name)
     top_10 = similarity_df.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
@@ -232,7 +233,7 @@ Next, we implemented another recommender system using the *sigmoid kernel*. This
 $$S_K(x, B) = \tanh(\alpha (x^T \cdot B) + c)$$
 
 | Variable Name | Variable Type | Description |
-|------------------|-------------------|----------------------------------|
+|-------------------|--------------------|----------------------------------|
 | `x` | Feature Vector | The feature vector representing the input product. |
 | `tanh` | Mathematical Function | The hyperbolic tangent function. |
 | $\alpha$ | Scalar | A scaling parameter that adjusts how sensitive the kernel is to the similarity score. |
@@ -254,7 +255,7 @@ import string
 
 2.  **Similarity Calculation**: We compute the pairwise similarities between all items in the `tfv_matrix`, resulting in a similarity matrix called `sig` (denoted as `S`). This is a square matrix where both the rows and columns correspond to items—in this case, product names—and each cell (`i`,`j`) represents the similarity score between item `i` and item `j` based on the sigmoid kernel. To facilitate lookup functionality, we use the `Series()` function to map product names to their corresponding indices.
 
-```{python}
+```{python, class.source = "fold-show"}
 sig = sigmoid_kernel(tfidf_matrix, tfidf_matrix)
 df_index = pd.Series(df_recommend2.index, index = df_recommend2['Product Name'])
 def give_recommendation2(product_name, sig = sig):
@@ -281,7 +282,7 @@ def give_recommendation2(product_name, sig = sig):
 
 3.  **Recommendation Generation**: Similarly, for any given product, the system returns the top **10** most recommended products based on similarity scores.
 
-```{python}
+```{python, class.source = "fold-show"}
 give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
 ```
 
@@ -289,7 +290,7 @@ give_recommendation2("Vinoclean Gentle Cleansing Almond Milk")
 
 1.  **Text Vectorization**: We implemented the same process as our cosine similarity recommender system, converting textual data (e.g., ingredients, descriptions) into vectors using TF-IDF. In addition, **we added** **weight to** `Brand Name` **and** `Product Category` for a fine-tuned similarity calculation.
 
-```{python, echo = FALSE, warning = FALSE, message = FALSE}
+```{python, warning = FALSE, message = FALSE, class.source = "fold-show"}
 df_recommend2['string2'] = (df_recommend2['Brand Name'].map(remove_punctuation) + " ")*4 + \
 df_recommend2['Product Name'].map(remove_punctuation) + " " + \
 (df_recommend2['Product Category'].map(remove_punctuation) + " ")*4 + \
@@ -304,7 +305,7 @@ tfidf_matrix2 = tfidf2.fit_transform(df_recommend2['string2'])
 
 2.  **Similarity Calculation**: We computed pairwise cosine similarity scores between products.
 
-```{python, warning = FALSE}
+```{python, warning = FALSE, class.source = "fold-show"}
 import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -313,18 +314,18 @@ similarity_df2 = pd.DataFrame(cosine_similarity2,
                 index = df_recommend2['Product Name'], 
                 columns = df_recommend2['Product Name']
                 )
-similarity_df2.head()
+# similarity_df2.head()
 ```
 
 3.  **Recommendation Generation**: Just like the previous two, for any given product, our recommender system returns the top **10** most recommended products based on similarity scores.
 
-```{python}
+```{python, class.source = "fold-show"}
 def give_recommendation3(product_name):
     product_index = similarity_df2.index.get_loc(product_name)
     top_10 = similarity_df2.iloc[product_index].sort_values(ascending=False)[1:11].reset_index()
     top_10.columns = ['Product Name', "Similarity Rating"]
-    top10_product_values = pd.Series(top_10.index, index = top_10['Product Name'])
-    top_10['Product Rating'] = df_recommend2["Product Rating"].iloc[top10_product_values].values
+    top_10 = top_10.merge(df_recommend2[['Product Name', 'Product Rating']],
+    on="Product Name", how="left")
     print(f"Recommendations for customers buying {product_name} :\n")
     return top_10.style.set_properties(
     **{"background-color": "white","color":"black","border": "1.5px solid black"})
@@ -346,13 +347,15 @@ We have tested three different recommender system approaches for skincare produc
 
 -   Best-rated recommendation: 4.2 out of 5 stars
 
--   Limitation: Returned fewer relevant recommendations compared to other approaches.
+-   Similarity score not shown for Sigmoid Kernel Approach
+
+-   Recommend the same products in the same order as Cosine Similarity Approach
 
 **Cosine Similarity with Weight Adjustment (Product Category & Brand Emphasis)**
 
 -   Top similarity score: 0.56%
 
--   Best-rated recommendation: 4.1 out of 5 stars
+-   Best-rated recommendation: 4.2 out of 5 stars
 
 -   Most effective method, as it improved similarity rankings while maintaining high-rated recommendations.
 
@@ -374,7 +377,7 @@ To better understand the composition and characteristics of the skincare product
 
 We begin by examining how the products are distributed across different categories. This helps us identify which types of skincare products are most represented in the dataset.
 
-```{r echo = F}
+```{r warning=F}
 
 filter %>%
   group_by(`Product Category`) %>%
@@ -398,7 +401,7 @@ From the chart, we see that certain categories like creams and cleansers are mor
 
 Next, we want to look at how product ratings are distributed to understand how satisfied customers are with the available skincare products.
 
-```{r, warning = FALSE, echo = F}
+```{r, warning = FALSE}
 # Plot distribution of Product Rating
 ggplot(filter, aes(x = `Product Rating`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -416,7 +419,7 @@ If product compatibility (e.g., skin type, concerns) affects satisfaction, then 
 
 We also want to see how many customer reviews each product received. Since review counts can vary widely, we use a logarithmic scale to better represent the spread.
 
-```{r, warning = FALSE, echo = F}
+```{r, warning = FALSE}
 # Plot distribution of Product Reviews (log scale to handle large variations)
 ggplot(filter, aes(x = `Product Reviews`)) +
   geom_histogram(bins = 30, fill = "darkseagreen", alpha = 0.7, color = "black") +
@@ -432,7 +435,7 @@ This plot reveals that while most products have fewer than 1000 reviews, a small
 
 To identify the most popular products in our dataset, we plotted the top 10 skincare items based on the number of user reviews. In addition to showing popularity, we added each product’s average rating as a label to reveal how well these bestsellers are actually received by customers.
 
-```{r echo = F}
+```{r, warning=FALSE}
 filter %>%
   arrange(desc(`Product Reviews`)) %>%
   slice(1:10) %>%
@@ -479,7 +482,7 @@ While our approach was successful, future improvements could focus on enhancing 
 
 Web-scraper final loop:
 
-```{python, eval = FALSE, warning = FALSE, message = FALSE}
+```{python, eval = FALSE, warning = FALSE, message = FALSE, class.source = "fold-show"}
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
